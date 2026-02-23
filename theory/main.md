@@ -19,7 +19,8 @@ header-includes:
   - \usepackage{amsmath}
   - \usepackage{amssymb}
   - \usepackage{mathtools}
-  - \usepackage{bm}
+  - \usepackage{unicode-math}
+  - \setmathfont{Latin Modern Math}
   - \usepackage{booktabs}
   - \usepackage{longtable}
   - \usepackage{array}

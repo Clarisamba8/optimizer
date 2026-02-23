@@ -16,6 +16,22 @@ $$
 
 where $r_{i,t}$ denotes the return of asset $i$ at time $t$ and $T$ is the total number of observations. The sample mean is an unbiased estimator of the true expected return under stationarity, and its variance decreases as $\sigma_i^2 / T$. However, this convergence is slow relative to the precision demanded by portfolio optimization. Merton (1980) demonstrated that estimation error in expected returns dominates portfolio construction for samples shorter than approximately 25 years of monthly data. The core difficulty is that equity return distributions have high variance relative to their means: annualized Sharpe ratios rarely exceed unity, implying that the signal (the mean) is small relative to the noise (the standard deviation). As a result, the sample mean is an unbiased but extremely noisy estimator, and portfolios constructed from raw sample means tend to exhibit extreme and unstable weights.
 
+![Fig. 28: Sample Mean Instability: 95% Confidence Intervals Across Window Lengths](../figures/ch02/fig_28_sample_mean_instability.png)
+
+**Example: Standard error of the sample mean.** Consider an asset with annualised volatility $\sigma = 20\%$. Using $T = 60$ observations (approximately three months of daily data), the standard error of the sample mean estimate is:
+
+$$
+\text{SE} = \frac{\sigma}{\sqrt{T}} = \frac{0.20}{\sqrt{60}} \approx 0.0258 \;(2.58\%\text{ per year})
+$$
+
+A 95% confidence interval around a sample mean of $\hat{\mu} = 8\%$ spans:
+
+$$
+\hat{\mu} \pm 1.96 \times \text{SE} = 8\% \pm 1.96 \times 2.58\% = [2.94\%,\; 13.06\%]
+$$
+
+The interval is approximately ten percentage points wide — far too imprecise to reliably rank assets by expected return. Even with five years of monthly observations ($T = 60$), the true mean could plausibly be anywhere from near zero to above 13\%. This is the fundamental challenge motivating shrinkage and equilibrium-based estimators.
+
 ### Shrinkage Toward the Grand Mean
 
 Shrinkage estimation addresses the instability of sample means by pulling individual estimates toward a common central value. The shrinkage estimator takes the form:
@@ -27,6 +43,30 @@ $$
 where $\bar{\mu}_i$ is the sample mean of asset $i$, $\bar{\mu}_{\text{grand}} = \frac{1}{N}\sum_{i=1}^{N} \bar{\mu}_i$ is the grand mean across all $N$ assets, and $\alpha \in [0, 1]$ is the shrinkage intensity. When $\alpha = 0$, the estimator reduces to the sample mean; when $\alpha = 1$, all assets receive the same expected return, and any mean-variance optimizer will produce a minimum-variance portfolio.
 
 The theoretical justification derives from the James-Stein estimator, which demonstrates that for $N \geq 3$ Gaussian random variables, the sample mean is inadmissible: there exists a shrinkage estimator that uniformly dominates it in terms of total squared error. The James-Stein result provides the theoretically optimal $\alpha$ for Gaussian returns, balancing the bias introduced by shrinkage against the variance reduction it achieves. In practice, shrinkage reduces the dispersion of expected return estimates, compressing extreme values toward the cross-sectional average. This compression produces more diversified portfolios that are less sensitive to estimation noise in any individual asset's mean return.
+
+![Fig. 30: James-Stein Shrinkage — Raw Sample Means vs Shrunk Means](../figures/ch02/fig_30_shrinkage_scatter.png)
+
+**Example: Shrinkage toward the grand mean.** Consider five assets with sample means $\bar{\boldsymbol{\mu}} = [15\%,\; 8\%,\; {-2\%},\; 12\%,\; 3\%]$. The grand mean is:
+
+$$
+\bar{\mu}_{\text{grand}} = \frac{15 + 8 + (-2) + 12 + 3}{5} = \frac{36}{5} = 7.2\%
+$$
+
+Applying the James-Stein shrinkage formula with $\alpha = 0.5$:
+
+$$
+\hat{\mu}_i^{\text{shrunk}} = 0.5 \times 7.2\% + 0.5 \times \bar{\mu}_i
+$$
+
+| Asset | Raw mean | Shrunk mean ($\alpha = 0.5$) |
+|---|---|---|
+| 1 | 15.0\% | 11.1\% |
+| 2 | 8.0\% | 7.6\% |
+| 3 | $-$2.0\% | 2.6\% |
+| 4 | 12.0\% | 9.6\% |
+| 5 | 3.0\% | 5.1\% |
+
+The shrinkage compresses the cross-sectional spread from $[-2\%, 15\%]$ to $[2.6\%, 11.1\%]$. An optimizer fed the shrunk estimates produces weights that are less extreme and more robust to mean estimation error.
 
 ### Exponentially Weighted Mean
 
@@ -57,6 +97,8 @@ $$
 where $\mathbb{E}[R_{\text{mkt}}] - R_f$ is the expected market excess return and $\sigma_{\text{mkt}}^2$ is the variance of market returns.
 
 This approach has a crucial advantage: it requires no historical return estimation for individual assets. The only inputs are the covariance matrix (which is estimated with greater precision than means) and the risk aversion parameter. The resulting implied returns are internally consistent with market equilibrium and produce well-diversified portfolios when used as inputs to mean-variance optimization. For this reason, equilibrium returns serve as the most stable and theoretically grounded baseline for the Black-Litterman framework, where they function as the prior distribution that is subsequently updated with investor views.
+
+![Fig. 32: Historical Sample Means vs Equilibrium Implied Returns](../figures/ch02/fig_32_equilibrium_vs_historical.png)
 
 ### Estimator Selection Guidance
 
@@ -108,6 +150,8 @@ where $\mathbf{D} = \text{diag}(\sigma_1, \ldots, \sigma_N)$ contains the sample
 
 Empirical studies consistently find that Ledoit-Wolf shrinkage reduces portfolio volatility forecast errors by 30--50\% compared to the raw sample covariance, with the largest improvements occurring in high-dimensional settings where $N/T$ is substantial. The improvement arises because shrinkage corrects the systematic eigenvalue distortion: overestimated large eigenvalues are pulled down, underestimated small eigenvalues are pulled up, and the resulting matrix is better conditioned.
 
+![Fig. 33: Ledoit-Wolf Shrinkage — Eigenvalue Compression](../figures/ch02/fig_33_lw_eigenvalues.png)
+
 ### Oracle Approximating Shrinkage
 
 The Oracle Approximating Shrinkage (OAS) estimator extends the Ledoit-Wolf framework by computing an analytically optimal shrinkage intensity without requiring the specification of a particular target structure. It approximates the oracle shrinkage (the intensity that would be chosen if the true covariance matrix were known) using only observable quantities from the sample. This estimator adapts automatically to the data characteristics, adjusting its shrinkage intensity based on the dimensionality ratio $N/T$ and the structure of the sample covariance.
@@ -132,6 +176,16 @@ $$
 
 where $\bar{\lambda}_{\text{noise}}$ is the average of the noise eigenvalues, ensuring the trace (total variance) is preserved. This approach is particularly effective when $N/T$ is large, as a greater fraction of eigenvalues falls within the noise band.
 
+![Fig. 34: Marchenko-Pastur Law — Noise vs Signal in the Eigenvalue Spectrum](../figures/ch02/fig_34_marchenko_pastur.png)
+
+**Example: Computing the noise cutoff $\lambda_+$.** With $N = 100$ assets and $T = 500$ observations, the concentration ratio is $q = N/T = 100/500 = 0.2$. The upper boundary of the Marchenko-Pastur bulk is:
+
+$$
+\lambda_+ = \sigma^2\!\left(1 + \sqrt{q}\right)^2 = 1 \times \left(1 + \sqrt{0.2}\right)^2 = (1 + 0.4472)^2 = 1.4472^2 \approx 2.09
+$$
+
+Eigenvalues of the sample correlation matrix that fall below 2.09 are statistically indistinguishable from those produced by pure noise. With $N = 100$ eigenvalues, approximately 5--8 exceed this threshold and represent genuine systematic risk factors (the market factor, major sector factors, and style tilts). The remaining 92--95 eigenvalues should be replaced by their average to remove noise from the covariance estimate.
+
 ### Detoning
 
 Detoning removes the dominant market factor, corresponding to the largest eigenvalue and its associated eigenvector, from the covariance matrix. In most equity covariance matrices, the first principal component captures the market mode: the tendency of all stocks to move together. While this common factor is a genuine feature of the return distribution, it can obscure the underlying correlation structure that is relevant for diversification.
@@ -143,6 +197,8 @@ $$
 $$
 
 where $\lambda_1$ is the largest eigenvalue and $\mathbf{v}_1$ is the corresponding eigenvector. The resulting matrix reveals the residual correlation structure net of the common market mode. This is useful when the objective is to construct portfolios that are diversified in a factor-neutral sense rather than merely market-directional. Detoning is often applied in combination with denoising: first the noise eigenvalues are cleaned, then the market factor is removed.
+
+![Fig. 36: Detoning — Full vs Market-Factor-Removed Correlation Matrix](../figures/ch02/fig_36_detoning.png)
 
 ### Gerber Statistic
 
@@ -157,6 +213,8 @@ $$
 where $N^{++}_{ij}$ counts the number of periods where both $|r_{i,t}| > \theta_i$ and $|r_{j,t}| > \theta_j$ with the same sign, and $N^{+-}_{ij}$ counts periods where both exceed their thresholds but with opposite signs. The thresholds $\theta_i$ are typically set as a fraction of each asset's standard deviation. Observations where either asset's return falls within the threshold band are excluded from the count entirely.
 
 This construction makes the Gerber statistic robust to non-Gaussian return distributions, particularly those with heavy tails. By ignoring small returns, it avoids contamination from the many near-zero observations that dominate the sample but carry little information about tail dependence. The resulting covariance matrix tends to be better conditioned and more informative about the co-movement structure during periods of market stress.
+
+![Fig. 37: Gerber Statistic vs Pearson Correlation for All Asset Pairs](../figures/ch02/fig_37_gerber_vs_pearson.png)
 
 ### Exponentially Weighted Covariance
 
@@ -248,6 +306,10 @@ $$
 
 where $\mathbf{B} \in \mathbb{R}^{N \times K}$ is the loading matrix, $\mathbf{F} \in \mathbb{R}^{K \times K}$ is the factor covariance matrix, and $\mathbf{D} \in \mathbb{R}^{N \times N}$ is a diagonal matrix of specific (idiosyncratic) variances. This decomposition ensures that the estimated covariance is positive semi-definite by construction (provided $\mathbf{F}$ is positive semi-definite and $\mathbf{D}$ has non-negative entries), and it is always invertible when the specific variances are strictly positive, regardless of the ratio $N/T$.
 
+![Figure 38: Factor Model Dimensionality Reduction](../figures/ch02/fig_38_factor_model_params.png)
+
+**Figure 38.** Free parameters in covariance estimation as a function of universe size $N$. Full covariance requires $N(N+1)/2$ parameters, growing quadratically. A factor model with $K$ factors requires only $N(K+1)$ parameters — linear in $N$ for fixed $K$. At $N=500$, a 5-factor model reduces the parameter count by over 95%. Ledoit-Wolf shrinkage (dotted overlay) operates on the same quadratic number of parameters but regularises them toward a structured target, trading statistical efficiency for computation.
+
 ### Factor Covariance and Specific Risk
 
 The factor covariance matrix $\mathbf{F}$ is estimated in the lower-dimensional factor space, where $K \ll N$ ensures that even the sample covariance is well-conditioned. Any of the covariance estimators discussed in the previous section (Ledoit-Wolf, exponentially weighted covariance, random matrix theory denoising, and others) can be applied to factor returns rather than asset returns, providing additional regularization in factor space.
@@ -287,6 +349,10 @@ where $\boldsymbol{\mu}_s \in \mathbb{R}^N$ and $\boldsymbol{\Sigma}_s \in \math
 $$
 p(\mathbf{r}_{1:T}, z_{1:T}) = p(z_1) \prod_{t=2}^{T} p(z_t \mid z_{t-1}) \prod_{t=1}^{T} p(\mathbf{r}_t \mid z_t)
 $$
+
+![Figure 39: HMM Regime Detection](../figures/ch02/fig_39_hmm_regimes.png)
+
+**Figure 39.** Three-panel HMM regime detection. *Panel A:* Cross-asset mean daily return series with background shading by dominant smoothed state (blue = bull / low-volatility; red = bear / high-volatility). *Panel B:* Smoothed posterior state probabilities $\gamma_t(s) = p(z_t = s \mid \mathbf{r}_{1:T})$ as a stacked area chart — periods of high uncertainty appear as blended colours. *Panel C:* Fitted transition matrix $\mathbf{A}$ showing the probability of moving from one regime to another; high diagonal values indicate persistent regimes.
 
 Two-state models (bull/bear or low-volatility/high-volatility) capture the dominant regime structure in equity markets. Three-state models add an intermediate regime that accommodates transitional periods. The number of states $S$ is a structural hyperparameter, selected by information criteria (AIC, BIC) or cross-validated predictive performance.
 
@@ -352,6 +418,10 @@ The second term inflates the blended covariance by the cross-state dispersion of
 
 During a high-probability bear market regime, the blended estimates shift toward the bear-state parameters: lower expected returns, higher volatilities, and elevated correlations. During a bull regime, the reverse holds. Transitions between regimes are smooth, governed by the continuous evolution of filtered probabilities, which avoids the instability that hard regime switching would introduce.
 
+![Figure 40: HMM-Blended vs Empirical Moments](../figures/ch02/fig_40_hmm_blended.png)
+
+**Figure 40.** Rolling annualised moments: HMM-blended (solid) vs empirical (dashed), computed on a 3-year window stepped monthly. *Panel A:* Expected return — the HMM-blended estimate shifts more rapidly during regime transitions. *Panel B:* Volatility — the HMM-blended covariance is systematically higher than the empirical covariance because it includes the cross-state mean-dispersion term $\sum_s p_s (\boldsymbol{\mu}_s - \hat{\boldsymbol{\mu}})(\boldsymbol{\mu}_s - \hat{\boldsymbol{\mu}})^\top$ from the full law of total variance. This inflation is conservative and appropriate: when the regime is uncertain, total uncertainty is genuinely larger than any single-regime estimate would suggest.
+
 These time-varying moments serve as direct inputs to the empirical prior and, through it, to the optimization pipeline. Any of the covariance estimators discussed in the preceding sections (shrinkage, denoising, Graphical Lasso) can be applied within each regime to regularize the state-conditional covariance estimates, a technique that is particularly valuable when the effective sample size per regime is small.
 
 ### Deep Markov Models
@@ -398,6 +468,10 @@ $$
 
 The first term rewards accurate reconstruction of observed returns. The second term penalizes deviation of the approximate posterior from the generative prior, regularizing the latent dynamics against overfitting.
 
+![Figure 42: DMM vs HMM Per-Asset Log-Likelihood](../figures/ch02/fig_42_dmm_vs_hmm.png)
+
+**Figure 42.** Per-asset predictive performance: DMM ELBO/T (variational lower bound on log-marginal-likelihood) vs HMM exact log-likelihood/T. Points above the diagonal indicate assets for which the DMM provides a better variational fit. Points below indicate assets where the parsimonious HMM suffices. **Implementation note:** DMM requires `pip install torch pyro-ppl`, which are intentionally excluded from `pyproject.toml` due to platform-specific GPU dependencies and package size. DMM produces **diagonal covariance only** — the emission network outputs $\text{diag}(\boldsymbol{\sigma}^2)$, so cross-asset covariances must be supplemented from a separate estimator when used in optimisation.
+
 **Predictive moment extraction.** Given observations $\mathbf{r}_{1:t}$ up to the current time, the DMM produces a distribution over the next-period latent state and consequently a predictive distribution over returns. The predictive moments are:
 
 $$
@@ -437,6 +511,19 @@ $$
 $$
 
 The prior serves as the modular interface that decouples estimation from optimization. Any estimator conforming to the prior protocol can be substituted without downstream changes, enabling systematic comparison of estimation approaches through cross-validation.
+
+**Volatility Drag Example (10-year horizon).**
+
+Consider two portfolios with the same volatility but different arithmetic expected returns. Both have $\sigma = 5\%$, isolating the effect of a 2% return differential compounding over a decade:
+
+| Scenario | $\mathbb{E}[R]$ (arith.) | $\sigma$ | Geometric mean $\approx \mathbb{E}[R] - \tfrac{1}{2}\sigma^2$ | 10-year wealth $(1+g)^{10}$ |
+|----------|--------------------------|----------|---------------------------------------------------------------|----------------------------|
+| A | 10% | 5% | $10\% - \tfrac{1}{2}(5\%)^2 = 9.875\%$ | $1.09875^{10} \approx 2.564$ |
+| B |  8% | 5% | $8\% - \tfrac{1}{2}(5\%)^2 = 7.875\%$ | $1.07875^{10} \approx 2.134$ |
+
+The 2% arithmetic return advantage compounds into a wealth ratio of $2.564 / 2.134 \approx 1.202$ — roughly 20% more terminal wealth over ten years. Meanwhile, the volatility drag for each scenario is modest at low volatility: the arithmetic projection for Scenario A gives $1.10^{10} = 2.594$, while the geometric projection gives $1.09875^{10} = 2.564$, a difference of about 1.2% in terminal wealth. At higher volatilities the drag grows quadratically: at $\sigma = 20\%$ the drag is $\tfrac{1}{2}(0.20)^2 = 2\%$ per year, overstating terminal wealth by roughly 20% over a decade.
+
+Mean-variance optimisers that maximise arithmetic expected return without penalising variance implicitly ignore this compounding cost. The volatility drag $\sigma^2/2$ per period means that two portfolios with identical arithmetic returns but different volatilities will produce materially different compound wealth paths.
 
 ## LLM-Augmented Moment Estimation
 

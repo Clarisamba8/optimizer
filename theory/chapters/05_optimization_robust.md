@@ -46,6 +46,22 @@ $$
 
 When $\rho$ is the portfolio standard deviation, this yields the maximum Sharpe ratio portfolio. When $\rho$ is the conditional value-at-risk, it yields the maximum CVaR ratio portfolio, and similarly for any other risk measure. The tangency portfolio is the point at which a ray from the origin is tangent to the efficient frontier.
 
+![Efficient Frontier with Key Optimization Objectives](../figures/ch05/fig_72_efficient_frontier.png)
+
+**Worked Example.** Consider three assets with annualized expected returns $\boldsymbol{\mu} = [8\%, 12\%, 6\%]^\top$ and covariance matrix:
+
+$$
+\boldsymbol{\Sigma} = \begin{pmatrix} 0.0225 & 0.0045 & 0.0018 \\ 0.0045 & 0.0400 & 0.0030 \\ 0.0018 & 0.0030 & 0.0100 \end{pmatrix}
+$$
+
+corresponding to volatilities $[\sigma_1, \sigma_2, \sigma_3] = [15\%, 20\%, 10\%]$.
+
+**(a) Minimum variance** ($\min_{\mathbf{w}} \mathbf{w}^\top \boldsymbol{\Sigma} \mathbf{w}$): weights $\mathbf{w}_{\text{mv}} \approx [0.25, 0.10, 0.65]$, portfolio risk $\sigma_P \approx 8.5\%$, return $\mu_P \approx 7.1\%$. The optimizer concentrates heavily in Asset 3 (lowest volatility) and avoids Asset 2 (highest volatility).
+
+**(b) Maximum Sharpe** ($\max_{\mathbf{w}} \mu_P / \sigma_P$): weights $\mathbf{w}_{\text{ms}} \approx [0.27, 0.24, 0.49]$, portfolio risk $\sigma_P \approx 9.0\%$, return $\mu_P \approx 8.0\%$. The tangency portfolio takes meaningful exposure to Asset 2 because its higher expected return compensates for the additional risk.
+
+**(c) Maximum utility** ($\lambda = 3$): weights $\mathbf{w}_{\text{util}} \approx [0.29, 0.32, 0.39]$, portfolio risk $\sigma_P \approx 9.8\%$, return $\mu_P \approx 8.5\%$. With high risk aversion ($\lambda = 3$), the optimizer produces an allocation between minimum variance and the tangency portfolio.
+
 ## Constraints
 
 Optimization without constraints produces mathematically elegant but practically infeasible portfolios. The constraint apparatus translates real-world investment mandates into mathematical restrictions on the weight vector $\mathbf{w}$.
@@ -126,6 +142,8 @@ $$
 
 The $L_2$ penalty is mathematically equivalent to adding $\kappa_2 \mathbf{I}$ to the covariance matrix, which improves its conditioning and reduces sensitivity to estimation noise. Typical values lie in the range $\kappa_2 \in [0.001, 0.1]$.
 
+![Regularization Effects: L1 Induces Sparsity, L2 Compresses Weights](../figures/ch05/fig_74_regularization.png)
+
 ### Custom Linear Constraints
 
 For investment mandates that transcend the standard constraint types, the framework supports general linear inequality constraints:
@@ -135,6 +153,8 @@ $$
 $$
 
 where $\mathbf{A} \in \mathbb{R}^{m \times N}$ and $\mathbf{b} \in \mathbb{R}^m$ encode $m$ linear restrictions. This general form subsumes turnover limits, tracking error bounds, portfolio beta constraints, and ESG score requirements as special cases.
+
+![How Constraints Reshape the Efficient Frontier](../figures/ch05/fig_75_constrained_frontier.png)
 
 ## Robust Optimization Under Parameter Uncertainty
 
@@ -157,6 +177,24 @@ $$
 $$
 
 where $\mathbf{S}_\mu$ is the covariance of the estimator $\hat{\boldsymbol{\mu}}$ and $\kappa$ is calibrated from a confidence level (typically $90\%$ to $95\%$). The parameter $\kappa$ controls the size of the uncertainty region: larger values produce more conservative portfolios that hedge against greater estimation error.
+
+![Robust Optimization: Hedging Against the Worst-Case Expected Returns](../figures/ch05/fig_76_robust_ellipse.png)
+
+**Worked Example.** Consider two assets with $\hat{\boldsymbol{\mu}} = [10\%, 6\%]^\top$ and estimator covariance:
+
+$$
+\mathbf{S}_\mu = \begin{pmatrix} 0.010 & 0.002 \\ 0.002 & 0.008 \end{pmatrix}
+$$
+
+For $\kappa = 0.30$ (a moderate uncertainty budget), the uncertainty ellipse has semi-axes proportional to $\kappa \sqrt{\lambda_i}$ where $\lambda_i$ are eigenvalues of $\mathbf{S}_\mu$. The eigenvalues are $\lambda_1 \approx 0.0112$ and $\lambda_2 \approx 0.0068$, giving semi-axes of $0.032$ and $0.025$.
+
+For a nominal portfolio $\mathbf{w} = [0.6, 0.4]$, the worst-case expected return within the ellipse is:
+
+$$
+\boldsymbol{\mu}^* = \hat{\boldsymbol{\mu}} - \frac{\kappa \, \mathbf{S}_\mu \mathbf{w}}{\sqrt{\mathbf{w}^\top \mathbf{S}_\mu \mathbf{w}}} \approx [7.3\%, 4.3\%]^\top
+$$
+
+The robust portfolio return is $\mathbf{w}^\top \boldsymbol{\mu}^* = 6.1\%$, compared to the nominal $\mathbf{w}^\top \hat{\boldsymbol{\mu}} = 8.4\%$. The $2.3\%$ gap represents the cost of robustness — the minimum expected return the investor can guarantee at this confidence level.
 
 Bootstrap-based approaches construct empirical confidence regions by resampling with replacement from the historical return series.
 
@@ -182,6 +220,8 @@ $$
 
 The radius $\epsilon$ (typically in the range $0.01$ to $0.05$) controls the degree of conservatism. A larger $\epsilon$ enlarges the ambiguity set, producing more defensive portfolios that are robust to greater distributional perturbations. This formulation provides protection against regime changes, fat tails, and model misspecification without requiring parametric distributional assumptions.
 
+![Distributionally Robust CVaR: Conservatism vs Robustness Tradeoff](../figures/ch05/fig_78_dr_cvar.png)
+
 ## Synthetic Data and Stress Testing
 
 ### Vine Copula Framework
@@ -195,6 +235,8 @@ The vine copula decomposition separates the multivariate distribution into three
 3. **Vine structure** that decomposes the full $N$-dimensional dependence into a sequence of conditional bivariate relationships, organized as a tree structure where each level conditions on variables from previous levels.
 
 This decomposition is both parsimonious and expressive: it requires only $\binom{N}{2}$ bivariate copula selections rather than direct specification of the full $N$-dimensional distribution.
+
+![Vine Copula Decomposition: Tree Structure for 5 Assets](../figures/ch05/fig_79_vine_copula.png)
 
 ### Scenario Generation
 
@@ -212,6 +254,8 @@ This produces scenarios where, for example, the broad market has declined by $30
 
 Applications include factor crash scenarios (equity market drawdown, interest rate spikes), sector-specific stress tests, and correlation regime shifts where historical co-movements break down.
 
+![Conditional Stress Test: Asset Returns During Market Stress](../figures/ch05/fig_80_stress_fan.png)
+
 ## Benchmark Tracking
 
 Enhanced index strategies and constrained active mandates require portfolios that remain close to a benchmark while seeking modest outperformance. The benchmark tracking formulation minimizes tracking error:
@@ -227,6 +271,8 @@ $$
 $$
 
 and $r_P$, $r_B$ denote the portfolio and benchmark returns respectively. The target tracking error $\text{TE}_{\text{target}}$ constrains how far the portfolio may deviate from the benchmark in risk space, balancing the desire for active returns against mandate compliance.
+
+![Benchmark Tracking: Portfolio vs Index with Tracking Error Band](../figures/ch05/fig_81_benchmark_tracking.png)
 
 ## Naive Allocation Methods
 
@@ -252,6 +298,8 @@ $$
 
 This allocation assigns larger weights to less volatile assets, implementing a rudimentary form of risk-based allocation. It is most appropriate when assets have similar Sharpe ratios, in which case equalizing risk contributions approximates the tangency portfolio. Since only marginal volatilities (not the full covariance matrix) are required, estimation error is substantially reduced relative to mean-variance optimization.
 
+![Naive vs Sophisticated Strategies: Out-of-Sample Performance](../figures/ch05/fig_82_strategy_comparison.png)
+
 ## Ensemble Optimization
 
 Model uncertainty is pervasive in portfolio optimization: different formulations, risk measures, and estimation methods yield different weight vectors, and no single approach dominates across all market conditions. Ensemble methods address this by combining multiple optimization strategies to reduce model risk.
@@ -263,5 +311,7 @@ Stacking, the primary ensemble approach, proceeds in three stages:
 2. **Sub-portfolio construction.** Each optimizer's output weight vector defines a sub-portfolio. These sub-portfolios span a range of risk-return characteristics reflecting the diversity of underlying assumptions.
 
 3. **Meta-optimization.** A final meta-optimizer allocates capital across the sub-portfolios, treating each as a single composite asset. This meta-level allocation diversifies across model assumptions: if mean-variance overestimates expected returns while hierarchical risk parity is overly conservative, the stacking framework blends both, reducing the impact of any single model's errors.
+
+![Ensemble Stacking: Diversifying Across Optimization Models](../figures/ch05/fig_83_stacking_schematic.png)
 
 \newpage

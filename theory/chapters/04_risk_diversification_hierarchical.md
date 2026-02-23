@@ -20,6 +20,8 @@ Variance is symmetric: it penalizes upside deviations from the mean with precise
 
 When variance serves as the objective, the resulting optimization problem is a convex quadratic program, solvable with high reliability by standard solvers.
 
+![Risk Measures on a Single Return Distribution](figures/ch04/fig_56_annotated_risk_measures.png)
+
 ### Semi-Variance and Semi-Deviation
 
 Semi-variance addresses the conceptual limitation of variance by restricting attention to returns that fall below the mean. It is defined as
@@ -61,6 +63,22 @@ $$\text{CVaR}_\alpha(\mathbf{w}) = -\frac{1}{\alpha}\int_0^{\alpha} F_{\mathbf{w
 CVaR represents the expected loss conditional on the loss exceeding VaR. It is a coherent risk measure, satisfying all four axioms of coherence: monotonicity, translation invariance, positive homogeneity, and crucially, subadditivity. This last property ensures that diversification is always recognized as risk-reducing under CVaR. CVaR is convex in portfolio weights, making it amenable to efficient optimization. The sample-based formulation replaces the integral with an average over the worst $\lfloor \alpha T \rfloor$ return observations, and the Rockafellar-Uryasev reformulation converts CVaR minimization into a linear program.
 
 CVaR is more conservative than VaR because it accounts for the severity of tail losses, not merely their frequency. This makes it the preferred risk measure for portfolios where tail risk is a primary concern.
+
+![VaR vs CVaR: Why Tail Shape Matters](figures/ch04/fig_57_cvar_vs_var.png)
+
+**Worked Example: VaR vs CVaR.** Consider a portfolio with $T = 100$ daily return observations. At the $\alpha = 5\%$ confidence level, we examine the 5 worst returns (the bottom 5\% of 100 observations). Sorting the returns from worst to best, suppose the five worst daily returns are:
+
+$$r_{(1)} = -8.5\%, \quad r_{(2)} = -6.2\%, \quad r_{(3)} = -5.0\%, \quad r_{(4)} = -4.1\%, \quad r_{(5)} = -3.2\%$$
+
+The Value-at-Risk at the 5\% level is the boundary of the tail — the 5th worst observation:
+
+$$\text{VaR}_{5\%} = -r_{(5)} = 3.2\%$$
+
+This tells us that losses exceed 3.2\% only 5\% of the time. However, VaR reveals nothing about *how bad* losses are when they do exceed this threshold. The Conditional Value-at-Risk averages over the entire tail:
+
+$$\text{CVaR}_{5\%} = -\frac{1}{5}\sum_{i=1}^{5} r_{(i)} = \frac{8.5 + 6.2 + 5.0 + 4.1 + 3.2}{5} = 5.4\%$$
+
+The CVaR of 5.4\% is nearly 70\% larger than the VaR of 3.2\%, revealing that the average loss *conditional on being in the tail* is substantially worse than the tail boundary alone suggests. This gap between VaR and CVaR widens as the distribution becomes more fat-tailed — precisely the scenario where tail risk matters most.
 
 ### Entropic Value-at-Risk
 
@@ -129,6 +147,8 @@ The choice of risk measure should reflect the investor's loss preferences, the d
 
 No single risk measure is universally superior. In practice, the most informative approach is to optimize under multiple risk measures and compare the resulting allocations, identifying positions that are robust across measures and those that are highly sensitive to the risk definition.
 
+![Portfolio Rankings Depend on the Risk Measure Chosen](figures/ch04/fig_59_risk_radar.png)
+
 ## Risk Budgeting and Equal Risk Contribution
 
 ### Risk Contribution Framework
@@ -149,6 +169,25 @@ $$\sum_{i=1}^{N} \text{RC}_i = \sigma_P$$
 
 This decomposition provides a complete accounting of risk: no risk is "unattributed," and the manager can assess whether the risk allocation across positions aligns with investment convictions.
 
+![Risk Contribution: Cap-Weighted vs Equal Risk Contribution](figures/ch04/fig_60_risk_contributions.png)
+
+**Worked Example: Marginal and Component Risk Contributions.** Consider a 4-asset portfolio with cap-weighted allocations $\mathbf{w} = (0.40, 0.30, 0.20, 0.10)^\top$ and covariance matrix:
+
+$$\boldsymbol{\Sigma} = \begin{pmatrix} 0.0400 & 0.0180 & 0.0120 & 0.0060 \\ 0.0180 & 0.0225 & 0.0090 & 0.0045 \\ 0.0120 & 0.0090 & 0.0100 & 0.0030 \\ 0.0060 & 0.0045 & 0.0030 & 0.0064 \end{pmatrix}$$
+
+corresponding to asset volatilities $\sigma_1 = 20\%$, $\sigma_2 = 15\%$, $\sigma_3 = 10\%$, $\sigma_4 = 8\%$ with correlations ranging from 0.375 to 0.6. The portfolio variance is $\sigma_P^2 = \mathbf{w}^\top \boldsymbol{\Sigma} \mathbf{w} = 0.01708$, giving $\sigma_P = 13.07\%$.
+
+The marginal risk contributions $\text{MRC}_i = (\boldsymbol{\Sigma}\mathbf{w})_i / \sigma_P$ and component risk contributions $\text{RC}_i = w_i \cdot \text{MRC}_i$ are:
+
+| Asset | $w_i$ | $(\boldsymbol{\Sigma}\mathbf{w})_i$ | $\text{MRC}_i$ | $\text{RC}_i$ | \% of total |
+|-------|--------|--------------------------------------|-----------------|----------------|-------------|
+| 1     | 0.40   | 0.02440                              | 0.1867          | 0.0747         | 57.1%       |
+| 2     | 0.30   | 0.01620                              | 0.1240          | 0.0372         | 28.5%       |
+| 3     | 0.20   | 0.00980                              | 0.0750          | 0.0150         | 11.5%       |
+| 4     | 0.10   | 0.00499                              | 0.0382          | 0.0038         | 2.9%        |
+
+Despite holding only 40\% of portfolio capital, Asset 1 contributes 57.1\% of total risk — a disproportionate share driven by its high volatility and positive correlations with the other assets. The Euler decomposition verifies: $\sum_i \text{RC}_i = 0.0747 + 0.0372 + 0.0150 + 0.0038 = 0.1307 \approx \sigma_P$. This concentrated risk profile motivates the equal risk contribution approach, which would rebalance weights until each asset contributes exactly 25\% of total risk.
+
 ### Equal Risk Contribution Portfolios
 
 The equal risk contribution portfolio requires each asset to contribute identically to total portfolio risk:
@@ -158,6 +197,8 @@ $$w_i \cdot (\boldsymbol{\Sigma}\mathbf{w})_i = \frac{\sigma_P^2}{N} \quad \text
 This system of $N$ non-linear equations does not admit a closed-form solution and must be solved iteratively. The resulting allocation lies between equal weighting and minimum variance: it avoids the extreme concentration that minimum variance can produce while incorporating correlation structure that equal weighting ignores. Equal risk contribution portfolios are particularly attractive because they require no expected return estimates, relying solely on covariance information. This eliminates the largest source of estimation error in portfolio optimization.
 
 The equal risk contribution approach embodies a principled agnosticism: absent strong views on expected returns, the most defensible allocation is one where no single asset dominates portfolio risk. In the risk budgeting framework, this corresponds to setting the budget vector to equal allocations across all assets.
+
+![ERC Weights: Between Equal-Weight and Minimum Variance](figures/ch04/fig_62_erc_comparison.png)
 
 ### Custom Risk Budgets
 
@@ -186,6 +227,8 @@ $$\text{DR}(\mathbf{w}) = \frac{\mathbf{w}^\top \boldsymbol{\sigma}}{\sqrt{\math
 where $\boldsymbol{\sigma}$ is the vector of individual asset volatilities and $\sigma_P$ is the portfolio volatility. The numerator represents the weighted average of individual volatilities, which is the portfolio volatility that would prevail if all pairwise correlations were unity. The denominator is the actual portfolio volatility, which is lower due to imperfect correlation. The diversification ratio therefore quantifies the risk reduction achieved through diversification.
 
 A diversification ratio of exactly 1.0 indicates zero diversification benefit: the portfolio behaves as though it holds a single asset. Higher ratios indicate greater diversification, with the maximum achievable ratio depending on the correlation structure of the asset universe. The maximum diversification portfolio is equivalent to the minimum variance portfolio when all assets are first standardized to unit volatility, revealing an elegant connection between the two approaches: maximum diversification seeks the allocation that extracts the greatest correlation-driven risk reduction, independent of individual asset volatility levels.
+
+![Diversification Ratio Landscape: Random Portfolios vs Optimal](figures/ch04/fig_63_diversification_scatter.png)
 
 ## Distance Measures and Codependence
 
@@ -221,6 +264,8 @@ $$I(X; Y) = \int \int p(x, y) \ln \frac{p(x, y)}{p(x)p(y)} \, dx \, dy$$
 
 Mutual information is zero if and only if the variables are independent, and it captures all forms of dependence: linear, non-linear, and higher-order. Unlike correlation-based measures, mutual information is not limited to monotonic relationships. Its estimation requires binning or kernel density estimation, introducing a degree of sensitivity to the estimation procedure. It provides the most general characterization of statistical dependence among the available measures.
 
+![Distance Measure Comparison: Linear vs Non-Linear Codependence](figures/ch04/fig_64_distance_heatmaps.png)
+
 ## Hierarchical Clustering
 
 Agglomerative hierarchical clustering constructs a dendrogram, a tree-structured representation of asset similarity, by iteratively merging the closest pairs of assets or clusters. Beginning with $N$ singleton clusters (one per asset), the algorithm proceeds as follows: at each step, the two clusters with the smallest inter-cluster distance are merged, and the distance matrix is updated. This process continues until all assets belong to a single cluster, producing a complete hierarchical decomposition.
@@ -234,6 +279,8 @@ The choice of linkage method determines how inter-cluster distance is computed f
 - **Weighted linkage** assigns equal weight to each cluster regardless of size when computing inter-cluster distances.
 
 The resulting dendrogram reveals the natural grouping structure of the asset universe: assets that cluster together at low merge distances are highly similar (close in the chosen distance metric), while those that merge only at high distances are dissimilar. This hierarchical structure is exploited by hierarchical risk parity, hierarchical equal risk contribution, and nested clusters optimization to produce allocations that respect asset relationships.
+
+![Hierarchical Clustering Dendrogram: Ward Linkage Recovers Sector Structure](figures/ch04/fig_65_ward_dendrogram.png)
 
 ## Hierarchical Risk Parity
 
@@ -253,6 +300,25 @@ The key advantages of HRP are substantial. First, no matrix inversion is require
 
 HRP accepts parameters for the distance measure, clustering method, and risk measure used in the bisection step. The risk measure need not be variance; any of the measures discussed above can be used, enabling CVaR-based or drawdown-based hierarchical risk parity.
 
+![HRP Recursive Bisection: From Dendrogram to Portfolio Weights](figures/ch04/fig_66_hrp_weights.png)
+
+**Worked Example: HRP Algorithm Walkthrough.** Consider 6 assets with a block-diagonal covariance structure forming two natural clusters: Cluster A = \{A1, A2, A3\} (high intra-cluster correlation $\rho_A = 0.7$) and Cluster B = \{B1, B2, B3\} (moderate intra-cluster correlation $\rho_B = 0.4$), with low inter-cluster correlation $\rho_{AB} = 0.1$. Asset volatilities are $\sigma = (18\%, 20\%, 16\%, 12\%, 14\%, 10\%)$.
+
+**Step 1: Compute Pearson distances.** $d_{ij} = \sqrt{(1 - \rho_{ij})/2}$. Within Cluster A: $d = \sqrt{0.15} = 0.387$. Within Cluster B: $d = \sqrt{0.30} = 0.548$. Between clusters: $d = \sqrt{0.45} = 0.671$.
+
+**Step 2: Ward linkage dendrogram.** Agglomerative clustering first merges the tightest pairs within each cluster, then merges the two clusters at the top level. The dendrogram shows two clearly separated branches corresponding to Clusters A and B.
+
+**Step 3: Quasi-diagonalize.** Reorder the covariance matrix following the dendrogram leaf ordering: (A1, A3, A2, B3, B1, B2). The reordered matrix concentrates large covariances near the diagonal.
+
+**Step 4: Recursive bisection.** At the root split (A vs B):
+- Cluster A variance: $\sigma_A^2 = \mathbf{1}^\top \boldsymbol{\Sigma}_A \mathbf{1} / 9 = 0.0259$ (high due to correlations)
+- Cluster B variance: $\sigma_B^2 = \mathbf{1}^\top \boldsymbol{\Sigma}_B \mathbf{1} / 9 = 0.0087$ (lower due to weaker correlations)
+- Allocation fraction: $\alpha = 1 - \sigma_A^2 / (\sigma_A^2 + \sigma_B^2) = 1 - 0.0259 / 0.0346 = 0.251$
+
+Cluster A receives 25.1\% and Cluster B receives 74.9\%. Recursing within Cluster A: assets split by inverse variance, yielding approximately $w_{A1} = 8.2\%$, $w_{A2} = 6.6\%$, $w_{A3} = 10.3\%$. Within Cluster B: $w_{B1} = 23.6\%$, $w_{B2} = 17.3\%$, $w_{B3} = 34.0\%$.
+
+**Step 5: Final weights.** $\mathbf{w}_{\text{HRP}} = (0.082, 0.066, 0.103, 0.236, 0.173, 0.340)$. Note that Cluster B receives substantially more capital because its lower intra-cluster correlation produces lower cluster-level variance. Within each cluster, lower-volatility assets receive higher weights. The algorithm required no matrix inversion — only pairwise distances and recursive bisection.
+
 ## Hierarchical Equal Risk Contribution
 
 Hierarchical Equal Risk Contribution (HERC) extends HRP by replacing the simple inverse-variance bisection with an equal risk contribution allocation within each cluster. At each node in the dendrogram, rather than dividing capital proportional to inverse variance, the algorithm solves for weights such that each sub-cluster contributes equally to the risk of the parent cluster. This combines the stability advantages of hierarchical methods (no matrix inversion, respect for clustering structure, robustness to covariance estimation error) with the risk-parity properties of equal risk contribution.
@@ -260,6 +326,8 @@ Hierarchical Equal Risk Contribution (HERC) extends HRP by replacing the simple 
 The result is a multi-level risk parity: each cluster at every level of the hierarchy, and each asset within its cluster, contributes equally to total risk at its respective level. This produces allocations that are both stable (from the hierarchical structure) and risk-balanced (from the equal contribution principle). The diversification is achieved simultaneously across the hierarchical levels, ensuring that risk concentration does not arise at any scale.
 
 HERC accepts the same parameterization options as HRP: distance measure, clustering method, and risk measure. The choice of risk measure determines what "equal risk contribution" means at each level, whether equal variance contribution, equal CVaR contribution, or equal drawdown contribution, among other possibilities.
+
+![HERC vs HRP: Weight and Risk Contribution Comparison](figures/ch04/fig_68_herc_vs_hrp.png)
 
 ## Nested Clusters Optimization
 
@@ -272,6 +340,8 @@ Nested Clusters Optimization (NCO) takes a different approach to exploiting hier
 The dimensional reduction is the key benefit. Consider a universe of $N = 500$ assets partitioned into $K = 20$ clusters of approximately 25 assets each. The inner optimizations each handle $25 \times 25$ covariance matrices, and the outer optimization handles a $20 \times 20$ matrix. Both are well-conditioned even with limited return history, whereas direct optimization of the full $500 \times 500$ matrix may be severely ill-conditioned. This decomposition dramatically improves the numerical stability and statistical reliability of the optimization.
 
 A further advantage of NCO is modularity: the inner and outer stages can use entirely different optimization strategies. For instance, the inner stage might use minimum variance to produce concentrated intra-cluster allocations, while the outer stage uses risk parity across clusters. This flexibility enables the practitioner to tailor the optimization approach to the characteristics of each hierarchical level.
+
+![NCO Two-Stage Decomposition: Inner and Outer Optimization](figures/ch04/fig_69_nco_schematic.png)
 
 ## Regime-Driven Risk Adaptation
 
@@ -295,6 +365,8 @@ As the filtered probability of the crisis state increases, the effective risk me
 
 When the Deep Markov Model framework is used instead of a discrete HMM, the continuous latent state $\mathbf{z}_t$ can parameterize the risk measure continuously. A mapping $\rho(\mathbf{w}; \mathbf{z}_t)$ that depends on the latent state enables risk sensitivity to vary along a continuum rather than switching between a finite set of predefined measures. In practice, this is achieved by defining a convex combination weight $\lambda(\mathbf{z}_t) \in [0, 1]$ (output by a neural network) that interpolates between two anchor risk measures.
 
+![Regime-Driven Risk Measure Transition: Variance to CVaR During Crises](figures/ch04/fig_70_regime_risk.png)
+
 ### Regime-Conditional Risk Budgets
 
 Regime probabilities also inform the calibration of risk budgets. Denoting by $\mathbf{b}_s$ the risk budget vector appropriate for regime $s$, the blended budget at time $t$ is:
@@ -312,6 +384,8 @@ b_{k,1} = \frac{w_{k}^{\text{expansion}}}{\sum_{j} w_{j}^{\text{expansion}}}, \q
 $$
 
 where $w_k^{\text{expansion}}$ and $w_k^{\text{contraction}}$ reflect the desired risk allocation to sector group $k$ under each regime. The blended budget $\mathbf{b}_t$ then governs the risk budgeting optimization at each rebalancing date, producing allocations that rotate sector exposures in response to changing macroeconomic conditions without requiring manual intervention.
+
+![Regime-Conditional Risk Budget Rotation Across Sectors](figures/ch04/fig_71_regime_budget_rotation.png)
 
 ### Integration with Hierarchical Methods
 

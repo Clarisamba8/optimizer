@@ -16,6 +16,8 @@ The full sample of $T$ return observations is partitioned into successive non-ov
 
 Typical calibrations set $T_{\text{train}} = 252$ trading days (one calendar year) and $T_{\text{test}} = 21$--$63$ trading days (one to three months). The concatenation of all out-of-sample test segments yields a single backtest path in which every observation is genuinely out-of-sample.
 
+![Walk-Forward Backtesting: Rolling vs Expanding Window Timeline](../figures/ch06/fig_84_walk_forward.png)
+
 ### Rolling Versus Expanding Windows
 
 Two windowing conventions exist, each with distinct statistical properties:
@@ -36,6 +38,8 @@ $$
 
 Expanding windows yield more stable parameter estimates (particularly for covariance matrices in high-dimensional settings) but adapt more slowly to structural breaks. The choice between the two conventions depends on the assumed stationarity of the return-generating process.
 
+![Rolling vs Expanding Windows: Stability-Adaptivity Tradeoff](../figures/ch06/fig_85_rolling_vs_expanding.png)
+
 ### Implementation
 
 Walk-forward backtesting is implemented as a temporal cross-validator with explicit test and training window size parameters. Applying this splitter to the full pipeline returns the concatenated out-of-sample portfolio for performance evaluation.
@@ -54,6 +58,8 @@ The procedure operates as follows:
 4. **Embargo** observations immediately following each test block to avoid autocorrelation contamination. If returns exhibit serial dependence over $h$ lags, the embargo period should span at least $h$ observations.
 5. **Enumerate** all $\binom{N_{\text{folds}}}{N_{\text{test}}}$ combinations, training and testing the pipeline on each.
 
+![CPCV Fold Structure: All 15 Train-Test Combinations for 6 Folds](../figures/ch06/fig_86_cpcv_fold_matrix.png)
+
 ### Statistical Output
 
 Each combination produces an out-of-sample portfolio segment. Reassembling the test segments across combinations generates multiple complete backtest paths. The resulting population of performance metrics (Sharpe ratios, maximum drawdowns, cumulative returns) permits distributional analysis:
@@ -65,6 +71,16 @@ $$
 where $\text{SR}_c$ is the Sharpe ratio of the $c$-th backtest path. A strategy with $\hat{p}(\text{SR} > 0) > 0.95$ provides substantially stronger evidence of genuine skill than a single walk-forward backtest with a positive Sharpe ratio.
 
 Summary statistics of interest include the mean Sharpe ratio across paths, the probability of positive excess returns, the distribution of maximum drawdowns, and the dispersion of terminal wealth outcomes.
+
+![CPCV Sharpe Ratio Distribution: Beyond a Single Backtest](../figures/ch06/fig_87_cpcv_sharpe.png)
+
+**Worked Example.** A minimum-variance strategy evaluated via CPCV ($N_{\text{folds}} = 6$, $N_{\text{test}} = 2$) produces $C(6,2) = 15$ backtest paths with Sharpe ratios:
+
+$$
+\text{SR} = [0.82, 0.31, -0.12, 0.64, 1.18, 0.45, 0.73, -0.08, 0.91, 0.56, 0.38, 0.67, 0.22, 0.49, 0.71]
+$$
+
+Summary statistics: $\hat{p}(\text{SR} > 0) = 13/15 = 86.7\%$, mean $\text{SR} = 0.52$, standard deviation $= 0.34$. The high probability of positive Sharpe ratio ($>80\%$) suggests the strategy captures genuine risk-return structure rather than overfitting. However, the wide dispersion ($\text{std} = 0.34$) indicates meaningful sensitivity to the specific temporal fold assignment.
 
 ### Implementation
 
@@ -136,6 +152,8 @@ $$
 
 The scoring function determines which strategy configuration "wins" during hyperparameter selection. The choice of scoring function therefore encodes the investor's preferences over the full distribution of portfolio outcomes, not merely its first two moments. Any callable that accepts a portfolio and returns a scalar can serve as a custom scoring function.
 
+![Performance Ratio Radar: Different Metrics, Different Winners](../figures/ch06/fig_89_performance_radar.png)
+
 ## Hyperparameter Tuning
 
 ### Grid Search
@@ -147,6 +165,8 @@ $$
 $$
 
 where $K$ is the number of cross-validation folds and $\text{Score}(\cdot)$ is the chosen performance measure. The critical requirement for financial applications is that **cross-validation must respect temporal ordering**: shuffling financial time-series data destroys the autocorrelation structure and produces optimistically biased performance estimates. The cross-validation splitter must therefore be a temporal method such as walk-forward or CPCV, never a random-shuffle approach.
+
+![Grid Search Heatmap: Sharpe Ratio Across Parameter Combinations](../figures/ch06/fig_90_grid_search.png)
 
 ### Randomized Search
 
@@ -194,6 +214,8 @@ Metadata routing solves this problem by enabling arbitrary named data to flow th
 
 The metadata routing mechanism generalizes the pipeline architecture to accommodate the full range of information required by sophisticated portfolio optimization, from market data through implied parameters to benchmark specifications, without breaking the clean estimator interface.
 
+![End-to-End Pipeline Architecture](../figures/ch06/fig_91_pipeline.png)
+
 ## Rebalancing Frameworks
 
 ### Calendar-Based Rebalancing
@@ -206,6 +228,8 @@ The metadata routing mechanism generalizes the pipeline architecture to accommod
 - **Annual** ($T_{\text{rebal}} = 252$ trading days): lowest turnover, appropriate for strategic asset allocation or buy-and-hold tilts.
 
 The choice of rebalancing frequency reflects the tension between **signal decay** (which favors frequent rebalancing) and **transaction costs** (which penalize it). The optimal frequency minimizes net-of-cost performance degradation, which depends on the specific factor structure, universe liquidity, and cost environment.
+
+![Rebalancing Frequency Trade-Off: Gross Return vs Transaction Costs](../figures/ch06/fig_92_rebalancing_frequency.png)
 
 ### Threshold-Based Rebalancing
 
@@ -229,6 +253,8 @@ where $\Delta_{\text{rel}}$ typically ranges from 0.20 to 0.25 (20--25\% deviati
 
 **Hybrid approaches** check thresholds at regular calendar intervals but only execute trades when at least one threshold is breached. This combines the discipline of calendar-based review with the cost efficiency of threshold-based execution.
 
+![Calendar vs Threshold Rebalancing: Trade Trigger Patterns](../figures/ch06/fig_93_trade_triggers.png)
+
 ### Transaction Cost Integration
 
 **Rebalancing optimization incorporates transaction costs directly into the objective function**, trading off expected portfolio improvement against implementation costs:
@@ -246,5 +272,25 @@ $$
 $$
 
 Realistic backtesting must account for these costs; a strategy that appears profitable gross of costs may be unprofitable net of costs, particularly for high-turnover strategies in less liquid markets.
+
+![The Hidden Tax: Gross vs Net Performance for a High-Turnover Strategy](../figures/ch06/fig_94_gross_vs_net.png)
+
+**Worked Example.** Consider a high-turnover momentum strategy with 200% annual turnover and 15 bps per unit of trade (encompassing commissions and half-spread).
+
+| Year | Gross Wealth | Turnover | Cost (bps) | Net Wealth |
+|------|-------------|----------|------------|------------|
+| 0 | $1.000 | — | — | $1.000 |
+| 1 | $1.080 | 200% | 30 | $1.077 |
+| 3 | $1.260 | 200% | 30/yr | $1.249 |
+| 5 | $1.469 | 200% | 30/yr | $1.449 |
+| 10 | $2.159 | 200% | 30/yr | $2.100 |
+
+Annual cost drag: $200\% \times 0.15\% = 0.30\%$ (30 bps). Over 10 years with 8% gross annual return, the cost compounds to:
+
+$$
+\text{Wealth reduction} = (1.08)^{10} - (1.077)^{10} = 2.159 - 2.100 = \$0.059 \approx 2.7\%
+$$
+
+At 30 bps annual drag, the 10-year cumulative wealth reduction is approximately 3%. For strategies with higher turnover (e.g., 400%) or less liquid markets (e.g., 30 bps per unit), the cost drag quadruples to 120 bps/year and approximately 10.6% over a decade.
 
 \newpage

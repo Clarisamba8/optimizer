@@ -26,6 +26,24 @@ where:
 
 The interpretation is straightforward: if all investors held the market portfolio with risk aversion $\delta$, equilibrium expected returns must satisfy the reverse optimization equation above. This provides a **neutral starting point** reflecting collective market wisdom rather than any individual forecast. The equilibrium prior anchors the model, ensuring that in the absence of active views, the resulting portfolio coincides with the market portfolio.
 
+![Market-Implied Equilibrium Returns by Sector](../figures/ch03/fig_43_equilibrium_returns.png)
+
+**Numerical Example: Computing Equilibrium Returns**
+
+Consider a 3-asset universe with covariance matrix, market weights, and risk aversion $\delta = 2.5$:
+
+$$
+\boldsymbol{\Sigma} = \begin{bmatrix} 0.04 & 0.01 & 0.005 \\ 0.01 & 0.09 & 0.02 \\ 0.005 & 0.02 & 0.06 \end{bmatrix}, \quad \mathbf{w}_{\text{mkt}} = \begin{bmatrix} 0.50 \\ 0.30 \\ 0.20 \end{bmatrix}
+$$
+
+The equilibrium returns are:
+
+$$
+\boldsymbol{\Pi} = \delta \boldsymbol{\Sigma} \mathbf{w}_{\text{mkt}} = 2.5 \times \begin{bmatrix} 0.04(0.50) + 0.01(0.30) + 0.005(0.20) \\ 0.01(0.50) + 0.09(0.30) + 0.02(0.20) \\ 0.005(0.50) + 0.02(0.30) + 0.06(0.20) \end{bmatrix} = 2.5 \times \begin{bmatrix} 0.0240 \\ 0.0360 \\ 0.0205 \end{bmatrix} = \begin{bmatrix} 0.0600 \\ 0.0900 \\ 0.0513 \end{bmatrix}
+$$
+
+yielding $\Pi_1 = 6.00\%$, $\Pi_2 = 9.00\%$, $\Pi_3 = 5.13\%$. Asset 2, despite holding only 30% of the market, commands the highest implied return because of its high variance ($\sigma^2_2 = 0.09$) and positive covariances with other assets. In equilibrium, investors demand higher compensation for bearing this risk. Asset 1, with the largest market weight but lowest variance, earns a moderate implied return — the market holds it willingly at a lower risk premium because it contributes less marginal risk to the portfolio.
+
 **Risk aversion estimation** derives from observable market quantities:
 
 $$
@@ -72,6 +90,8 @@ $$
 \mathbf{P} = \left[\frac{1}{n_1} \; \cdots \; \frac{1}{n_1} \; 0 \; \cdots \; 0\right], \quad Q = q
 $$
 
+![Pick Matrix P Encodes View Structure](../figures/ch03/fig_45_pick_matrix.png)
+
 Views can be specified using **string expressions** that are automatically parsed into the $\mathbf{P}$ and $\mathbf{Q}$ matrices. This design permits programmatic view generation, an essential capability for LLM-driven pipelines that produce views as structured text.
 
 ### Bayesian Posterior Returns
@@ -97,6 +117,30 @@ The **intuition** behind the posterior formula is that of a precision-weighted a
 - **No views**: posterior returns reduce exactly to the equilibrium $\boldsymbol{\Pi}$
 
 This graceful degradation ensures that the framework never produces worse results than the equilibrium baseline, regardless of view quality.
+
+![Black-Litterman Posterior: View Confidence Modulates the Tilt](../figures/ch03/fig_46_bl_posterior.png)
+
+**Numerical Walk-Through: Black-Litterman Posterior with One View**
+
+Continuing from the 3-asset example, suppose we hold the absolute view "Asset 2 will return 12%" with confidence $\alpha = 0.8$. The pick matrix and view vector are:
+
+$$
+\mathbf{P} = \begin{bmatrix} 0 & 1 & 0 \end{bmatrix}, \quad Q = 0.12
+$$
+
+Using the Idzorek method with $\tau = 0.05$, the view uncertainty is:
+
+$$
+\omega = \frac{1}{\alpha} \cdot \mathbf{P}^\top \boldsymbol{\Sigma} \mathbf{P} \cdot \tau = \frac{1}{0.8} \times 0.09 \times 0.05 = 0.005625
+$$
+
+The posterior expected returns combine the equilibrium prior $\boldsymbol{\Pi} = (0.0600, 0.0900, 0.0513)^\top$ with the view:
+
+$$
+\bar{\boldsymbol{\mu}} = \boldsymbol{\Pi} + \tau \boldsymbol{\Sigma} \mathbf{P}^\top \left(\mathbf{P} \tau \boldsymbol{\Sigma} \mathbf{P}^\top + \boldsymbol{\Omega}\right)^{-1} (Q - \mathbf{P}\boldsymbol{\Pi})
+$$
+
+The view residual is $Q - \mathbf{P}\boldsymbol{\Pi} = 0.12 - 0.0900 = 0.0300$. The posterior for Asset 2 shifts from its equilibrium value of 9.00% toward the view of 12%, with the magnitude of the shift governed by the relative precision of the view versus the prior. At $\alpha = 0.8$, Asset 2's posterior return moves substantially toward the view target, while Assets 1 and 3 also adjust slightly through the covariance structure — this propagation of views through correlations is a distinctive feature of the Black-Litterman framework.
 
 ### View Uncertainty Calibration
 
@@ -124,6 +168,8 @@ where $\alpha_k \in [0, \infty)$ calibrates the degree to which each view influe
 
 This parameterization is particularly amenable to LLM-driven confidence calibration, as the strength parameter maps naturally to a continuous confidence score.
 
+![View Confidence Sensitivity: How alpha_k Controls Posterior Tilt](../figures/ch03/fig_48_confidence_sensitivity.png)
+
 **Direct specification from forecast error** derives view uncertainty from the historical accuracy of the view-generating process:
 
 $$
@@ -131,6 +177,8 @@ $$
 $$
 
 estimated from a track record of past views and their outcomes. This approach is the most principled when sufficient historical data exists, as it directly captures the empirical reliability of the forecasting methodology.
+
+![Calibrating View Uncertainty from Forecast Track Record](../figures/ch03/fig_49_track_record.png)
 
 ### Black-Litterman Factor Model
 
@@ -149,6 +197,8 @@ $$
 where $\mathbf{B}$ is the $N \times K$ matrix of asset-to-factor loadings. This approach offers three advantages. First, it is more **parsimonious**: a small number of factor views implicitly generates views on all assets through their factor exposures. Second, it is more **stable**: factors are better-estimated than individual asset returns, producing smoother posterior distributions. Third, it is more **interpretable**: views on well-defined investment themes (value, momentum, quality, size) are easier to formulate, justify, and communicate than views on hundreds of individual securities.
 
 This architecture is realized by combining a factor model with a Black-Litterman prior applied at the factor level, so that views on factors propagate to asset-level expectations through the loading matrix.
+
+![Factor Views Propagate to Asset Returns Through the Loading Matrix](../figures/ch03/fig_50_factor_bl.png)
 
 ## Entropy Pooling: Non-Linear View Integration
 
@@ -176,6 +226,8 @@ $$
 subject to the normalization constraint $\sum_s p_s = 1$, non-negativity $p_s \geq 0$, and arbitrary view constraints expressed as moment conditions on the scenario-weighted distribution.
 
 The Kullback-Leibler divergence provides the natural measure of **information loss**: among all probability distributions satisfying the view constraints, the solution $\mathbf{p}^*$ is the one that introduces the least additional structure beyond what the views require. This principle of minimum relative entropy ensures that the posterior distribution reflects the views and nothing more; no spurious correlations or distributional artifacts are introduced.
+
+![Entropy Pooling Reweights Scenarios to Satisfy Views](../figures/ch03/fig_51_ep_reweight.png)
 
 ### View Types Supported
 
@@ -220,6 +272,8 @@ $$
 $$
 
 where $\alpha$ defines the tail probability (typically five percent). This enables direct expression of tail risk beliefs without parametric distributional assumptions.
+
+![Entropy Pooling: How Different View Types Reshape the Return Distribution](../figures/ch03/fig_52_ep_view_types.png)
 
 **Group views** aggregate across asset classifications:
 
@@ -272,6 +326,26 @@ Calibration of expert weights $\pi_m$ can proceed along several dimensions:
 The Opinion Pooling framework handles disagreement naturally, without requiring manual reconciliation. If one expert is bullish and another bearish on the same asset, the consensus distribution reflects the **probability-weighted blend** of their views. The base prior acts as an anchor when experts disagree sharply, tempering the consensus toward the neutral equilibrium estimate.
 
 This automatic conflict resolution is a significant advantage over sequential or hierarchical view integration schemes, where the order of incorporation can influence the final result. Under Opinion Pooling, all experts contribute simultaneously, and the consensus depends only on their respective credibility weights and posterior distributions.
+
+![Opinion Pooling: Consensus from Conflicting Expert Views](../figures/ch03/fig_53_opinion_pooling.png)
+
+**Numerical Example: Linear Opinion Pooling**
+
+Consider three experts providing expected return estimates for Asset A, with credibility weights $\pi_m$:
+
+| Source | Expected Return | Credibility $\pi_m$ |
+|--------|:-:|:-:|
+| Expert 1 (bullish) | 12% | 0.40 |
+| Expert 2 (bearish) | 4% | 0.30 |
+| Base prior (equilibrium) | 8% | 0.30 (residual) |
+
+The **linear pooling consensus** is the credibility-weighted average:
+
+$$
+E[r]^* = (1 - \pi_1 - \pi_2) \cdot E[r]_0 + \pi_1 \cdot E[r]_1 + \pi_2 \cdot E[r]_2 = 0.30 \times 8\% + 0.40 \times 12\% + 0.30 \times 4\% = 8.4\%
+$$
+
+The consensus of 8.4% lies slightly above the base prior, reflecting Expert 1's higher credibility weight and bullish conviction. Under **logarithmic (geometric) pooling**, the consensus would instead combine the log-densities of each expert, producing a narrower distribution that concentrates probability where experts agree. For Gaussian experts with the parameters above, logarithmic pooling yields a consensus with lower variance than any individual expert, effectively rewarding agreement and penalising extreme divergence.
 
 ## LLM-Driven View Generation and Integration
 
@@ -357,5 +431,7 @@ The sentiment-confidence interaction operates through several channels:
 **Ambiguity**: when sentiment signals are mixed or inconclusive, overall confidence is reduced across all views for the affected asset. This conservative response reflects the increased uncertainty that accompanies conflicting information sources.
 
 **Temporal decay** governs the weighting of sentiment signals over time. Recent news and earnings releases receive substantially more weight than older coverage, reflecting the rapid incorporation of information into market prices. A half-life parameter controls the rate of decay, with typical values ranging from one to four weeks depending on the asset's information environment and liquidity.
+
+![Sentiment-Fundamental Interaction Matrix for View Confidence](../figures/ch03/fig_55_sentiment_matrix.png)
 
 \newpage

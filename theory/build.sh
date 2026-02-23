@@ -19,7 +19,8 @@ pandoc main.md \
     chapters/06_validation_pipeline.md \
     bibliography.md \
     -o theory.pdf \
-    --pdf-engine=pdflatex \
+    --pdf-engine=lualatex \
+    --resource-path=chapters \
     --number-sections \
     --toc
 

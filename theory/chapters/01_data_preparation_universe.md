@@ -34,6 +34,29 @@ $$
 
 This temporal additivity makes log returns convenient for multi-period compounding analysis and for statistical modeling under the assumption of normally distributed innovations. However, log returns do **not** aggregate across assets: $\ln(1 + r_P) \neq \sum_i w_i \ln(1 + r_i)$. This violation of cross-sectional additivity renders log returns unsuitable as direct inputs to portfolio optimization. Using log returns in a mean-variance optimizer produces incorrect portfolio returns and misleading risk estimates.
 
+![Fig. 17: Arithmetic vs Logarithmic Returns](../figures/ch01/fig_17_arithmetic_vs_log.png)
+*Figure 17: Cumulative arithmetic vs. log returns for three NYSE stocks (left) and the resulting cross-sectional aggregation error in basis points when log returns are used as MVO inputs (right).*
+
+**Example 17.1 — 3-asset arithmetic aggregation error.**
+
+Consider a portfolio with weights $\mathbf{w} = (0.5,\ 0.3,\ 0.2)$ and single-period arithmetic returns $r = (+10\%,\ {-5\%},\ +3\%)$.
+
+*Correct arithmetic aggregation:*
+
+$$r_P = 0.5 \times 0.10 + 0.3 \times (-0.05) + 0.2 \times 0.03 = 0.050 - 0.015 + 0.006 = \mathbf{4.10\%}$$
+
+*Incorrect log-return aggregation:*
+
+$$\tilde{r}_P = \exp\!\left(0.5\ln(1.10) + 0.3\ln(0.95) + 0.2\ln(1.03)\right) - 1$$
+
+$$= \exp\!\left(0.5 \times 0.09531 - 0.3 \times 0.05129 + 0.2 \times 0.02956\right) - 1$$
+
+$$= \exp(0.04766 - 0.01539 + 0.00591) - 1 = \exp(0.03818) - 1 \approx \mathbf{3.89\%}$$
+
+The discrepancy is **21 basis points** for a single period. This bias accumulates over time and grows with return volatility.
+
+The log-return aggregation error is always negative (log-based understates portfolio return) because $\ln(1+r) \leq r$ by Jensen's inequality.
+
 **Multi-period scaling** of return moments introduces a further subtlety. The naive approach of scaling mean returns linearly with the horizon ($\mu_T = T \mu$) and volatility by the square root of time ($\sigma_T = \sigma \sqrt{T}$) relies on the assumption of independent and identically distributed returns. While this approximation is serviceable for short horizons, it introduces systematic error for horizons exceeding one year, where compounding effects, mean reversion, and volatility clustering become material.
 
 The correct approach assumes **log-normal price dynamics**, under which the multi-period gross return follows from the continuously compounded return distribution. Specifically, if single-period log returns are normally distributed with mean $\mu$ and variance $\sigma^2$, then the expected cumulative arithmetic return over horizon $T$ is:
@@ -49,6 +72,25 @@ $$
 $$
 
 These expressions capture the convexity adjustment arising from compounding and correctly propagate uncertainty over extended horizons.
+
+![Fig. 19: Naive vs Log-Normal Multi-Period Moment Scaling](../figures/ch01/fig_19_scaling_comparison.png)
+*Figure 19: Naive linear/sqrt-of-time scaling (dashed) versus exact log-normal compounding (solid) for expected return (left) and volatility (right) across horizons of 1–60 months. The shaded area is the convexity bias, which grows beyond the 12-month mark.*
+
+**Example 19.1 — S&P 500 10-year compounding bias.**
+
+Given daily log-return parameters $\mu = 0.08/252 \approx 3.17 \times 10^{-4}$ per day and $\sigma = 0.16/\sqrt{252} \approx 1.008\%$ per day, consider a 10-year horizon $T = 2520$ trading days.
+
+*Naive scaling (incorrect):*
+$$\mu_{\text{naive}} = \mu \times T = 0.08 \times 10 = 80.0\%$$
+$$\sigma_{\text{naive}} = \sigma\sqrt{T} = 0.16\sqrt{10} \approx 50.6\%$$
+
+*Log-normal correction (correct):*
+$$\mathbb{E}[R_T] = \exp\!\left(\mu T + \tfrac{1}{2}\sigma^2 T\right) - 1 = \exp\!\left(0.80 + \tfrac{1}{2} \times 0.0256 \times 10\right) - 1$$
+$$= \exp(0.80 + 0.128) - 1 = \exp(0.928) - 1 \approx \mathbf{152.9\%}$$
+
+The convexity adjustment $\tfrac{1}{2}\sigma^2 T = 12.8\%$ is the extra expected return from compounding that naive linear scaling ignores.
+
+**Gotcha**: inputs to `apply_lognormal_correction` are **log-return** parameters; the output is in **simple-return** space ($\mathbb{E}[R_T] = \exp(\cdots) - 1$). Using arithmetic return means as inputs will double-count the convexity correction.
 
 In practice, adjusted price series are first converted to arithmetic returns for use in downstream estimation. Multi-period adjustment is handled by applying the log-normal compounding correction to both expected returns and covariance estimates before they enter the optimizer. Setting the investment horizon to the target number of periods (for example, 252 for annualization with daily data) ensures that the moments fed into the optimizer reflect the compounding dynamics of wealth accumulation rather than the naive linear scaling assumption.
 
@@ -72,6 +114,28 @@ Winsorization preserves the direction and approximate timing of extreme returns 
 
 The thresholds of 3 and 10 standard deviations reflect a balance between robustness and information loss. Under a Gaussian distribution, returns beyond $3\sigma$ occur with probability $0.27\%$, roughly once per year for daily data. Returns beyond $10\sigma$ have vanishing probability under any reasonable model and warrant removal.
 
+![Fig. 21: Three-Group Outlier Treatment](../figures/ch01/fig_21_outlier_groups.png)
+*Figure 21: Return distribution before (left) and after (right) three-group outlier treatment: green = kept ($|z|<3$), orange = winsorized ($3 \le |z|<10$), red = removed ($|z|\ge 10$).*
+
+**Example 21.1 — Zone identification and winsorization.**
+
+Given an estimated mean $\mu = 0.0005$ and standard deviation $\sigma = 0.02$, consider the following observations:
+
+| Return | z-score | Zone | Treated Value |
+|--------|---------|------|---------------|
+| −0.020 | −1.025 | Keep | −0.0200 |
+| +0.520 | +25.975 | **Remove** | NaN |
+| +0.010 | +0.475 | Keep | +0.0100 |
+| −0.085 | −4.275 | **Winsorize** | $\mu - 3\sigma = -0.0595$ |
+| +0.065 | +3.225 | **Winsorize** | $\mu + 3\sigma = +0.0605$ |
+| −0.850 | −42.525 | **Remove** | NaN |
+| +0.001 | +0.025 | Keep | +0.0010 |
+| −0.007 | −0.375 | Keep | −0.0070 |
+| +0.250 | +12.475 | **Remove** | NaN |
+| +0.045 | +2.225 | Keep | +0.0450 |
+
+Three observations are removed (z-scores of 25.97, −42.53, 12.47) and two are winsorized to the $\pm 3\sigma$ boundaries.
+
 **Missing data imputation** arises when assets have sporadic gaps in their return histories (holidays in one market but not another, trading halts, or data vendor outages). Simple approaches such as zero-fill or forward-fill introduce biases: zero-fill deflates volatility estimates, while forward-fill creates artificial serial correlation. More principled methods include imputation from sector or industry averages (preserving cross-sectional relationships) and regression-based prediction from correlated factors (preserving the covariance structure of the broader universe).
 
 **Survivorship bias** constitutes one of the most insidious data quality issues in historical analysis. If the estimation sample includes only assets that survived to the present, historical return and risk estimates are upwardly biased, because the worst-performing assets (those that delisted, defaulted, or were acquired at distressed valuations) are systematically excluded. Proper treatment requires including delisted stocks in the historical sample with correct handling of delisting returns, the final return realized by investors when an asset ceases trading.
@@ -79,6 +143,9 @@ The thresholds of 3 and 10 standard deviations reflect a balance between robustn
 **Look-ahead bias** arises when the estimation procedure uses information that was not available to market participants at the time of the investment decision. Accounting data is particularly susceptible: quarterly earnings are reported with lags of several weeks, and point-in-time databases must be used to ensure that only data available as of the estimation date enters the model. Reporting lags must be explicitly accounted for to ensure that all information used in the optimization was genuinely available to market participants at the relevant decision point.
 
 **Data validation** encompasses systematic checks for impossible or inconsistent values: negative prices or volumes, sudden jumps exceeding plausible limits, and inconsistencies across related fields (e.g., a closing price outside the day's high-low range). These checks serve as a first line of defense against data corruption and should be applied before any statistical treatment.
+
+![Fig. 23: Data Quality Assessment Dashboard](../figures/ch01/fig_23_data_quality.png)
+*Figure 23: Data quality dashboard for the multi-exchange universe: (a) per-asset missing-data rates, (b) assets with the most extreme returns flagged by validation, (c) panel completeness by quarter.*
 
 ## Pre-Selection Pipeline
 
@@ -102,6 +169,9 @@ Highly correlated assets provide **redundant diversification**: a portfolio hold
 
 Systematic correlation filtering identifies all asset pairs whose sample correlation exceeds a specified threshold (typically $\rho > 0.90$ to $0.95$) and drops one asset from each pair, retaining the asset with superior risk-adjusted characteristics (e.g., higher Sharpe ratio, greater liquidity, or lower estimation uncertainty). Typical threshold values range from 0.90 to 0.95, balancing redundancy removal against excessive universe shrinkage.
 
+![Fig. 24: Pairwise Correlation Distribution and Filtering Threshold](../figures/ch01/fig_24_correlation_distribution.png)
+*Figure 24: Pairwise correlation distribution before (left) and after (right) applying `DropCorrelated` at threshold $\rho=0.75$. The right tail above the threshold disappears after filtering, removing redundant asset pairs.*
+
 ### Extreme Performance Selection
 
 When the investable universe is large and factor-scoring or signal-generation has been applied, optimization benefits from focusing on a subset of assets with the strongest factor exposures. Rather than optimizing across hundreds or thousands of assets, many of which contribute negligible expected alpha, the universe is reduced to the $k$ highest-ranked (or lowest-ranked, depending on the signal direction) assets.
@@ -119,6 +189,23 @@ $$
 with at least one inequality strict. In words, asset $j$ offers equal or higher expected return with equal or lower risk. A dominated asset $i$ is strictly inferior: no rational mean-variance investor would prefer it to $j$ regardless of risk aversion.
 
 Eliminating Pareto-dominated assets removes strictly inferior alternatives from the feasible set without discarding any asset that could contribute to the efficient frontier. The remaining **non-dominated** assets form the Pareto front in the mean-variance plane, and only these need enter the optimizer.
+
+![Fig. 25: Pareto Front in Mean-Variance Space](../figures/ch01/fig_25_pareto_front.png)
+*Figure 25: Assets in annualised return vs. volatility space. Grey points are Pareto-dominated; blue points are non-dominated and trace the Pareto frontier (dashed red step line).*
+
+**Example 25.1 — 5-asset Pareto dominance identification.**
+
+Consider five assets characterised by their annualised expected return $\mu$ and volatility $\sigma$:
+
+| Asset | $\mu$ | $\sigma$ | Dominated by | Status |
+|-------|--------|----------|--------------|--------|
+| A | 8% | 12% | — | **Non-dominated** |
+| B | 6% | 15% | A ($\mu_A > \mu_B$, $\sigma_A < \sigma_B$) | Dominated |
+| C | 9% | 18% | — | **Non-dominated** |
+| D | 7% | 12% | A ($\mu_A > \mu_D$, $\sigma_A = \sigma_D$) | Dominated |
+| E | 10% | 25% | — | **Non-dominated** |
+
+Asset B is dominated by A: A offers higher expected return (8% vs 6%) at lower volatility (12% vs 15%). Asset D is also dominated by A: A offers higher return (8% vs 7%) at equal volatility (12% = 12%). Assets A, C, and E survive onto the Pareto front — each is unbeatable on at least one dimension.
 
 ### Expiring Asset Filtering
 
@@ -144,6 +231,9 @@ $$
 $$
 
 The ordering matters: complete history selection must precede covariance-dependent filters (since the latter require a well-formed return matrix), and correlation filtering should precede dimensionality reduction (since redundant assets inflate the apparent universe size). Extreme performance selection or Pareto-optimal selection typically comes last among the filters, operating on the cleaned and de-duplicated universe to produce the final set of candidates for optimization.
+
+![Fig. 27: Pre-Selection Pipeline: Universe Reduction at Each Stage](../figures/ch01/fig_27_preselection_funnel.png)
+*Figure 27: Universe reduction at each pre-selection stage: 2 407 raw instruments reduced to 200 after history filter, data quality, decorrelation ($\rho>0.75$), and top-200 Sharpe selection. The right panel shows retention as a percentage of the original universe.*
 
 The **pipeline architecture** treats this entire chain, from raw price data through filtering through optimization, as a single composite estimation procedure. This design brings three important benefits:
 
