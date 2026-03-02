@@ -17,6 +17,7 @@ pandoc main.md \
     chapters/04_risk_diversification_hierarchical.md \
     chapters/05_optimization_robust.md \
     chapters/06_validation_pipeline.md \
+    chapters/07_macroeconomic_analysis.md \
     bibliography.md \
     -o theory.pdf \
     --pdf-engine=lualatex \
