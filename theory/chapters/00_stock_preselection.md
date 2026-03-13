@@ -24,20 +24,20 @@ Applying identical thresholds for entry and exit generates excessive turnover at
 
 The following table summarizes the recommended default parameters:
 
-| Filter | Entry Threshold | Exit Threshold |
-|---|---|---|
-| Free-float market cap | $\geq$ 200M USD and $\geq$ 10th percentile by exchange | $\geq$ 150M USD and $\geq$ 7.5th percentile |
-| 12-month avg. daily dollar volume | $\geq$ 750K USD | $\geq$ 500K USD |
-| 3-month avg. daily dollar volume | $\geq$ 500K USD | $\geq$ 350K USD |
-| Trading frequency (12-month) | $\geq$ 95% of trading days | $\geq$ 90% |
-| Price (US exchanges) | $\geq$ 3 USD | $\geq$ 2 USD |
-| Price (European exchanges) | $\geq$ 2 local currency | $\geq$ 1.5 local currency |
-| Trading history | $\geq$ 252 trading days | --- |
-| IPO seasoning | $\geq$ 60 trading days since first price | --- |
-| Financial statements | $\geq$ 3 annual or 8 quarterly reports | --- |
+| Filter                            | Entry Threshold                                        | Exit Threshold                              |
+| --------------------------------- | ------------------------------------------------------ | ------------------------------------------- |
+| Free-float market cap             | $\geq$ 200M USD and $\geq$ 10th percentile by exchange | $\geq$ 150M USD and $\geq$ 7.5th percentile |
+| 12-month avg. daily dollar volume | $\geq$ 750K USD                                        | $\geq$ 500K USD                             |
+| 3-month avg. daily dollar volume  | $\geq$ 500K USD                                        | $\geq$ 350K USD                             |
+| Trading frequency (12-month)      | $\geq$ 95% of trading days                             | $\geq$ 90%                                  |
+| Price (US exchanges)              | $\geq$ 3 USD                                           | $\geq$ 2 USD                                |
+| Price (European exchanges)        | $\geq$ 2 local currency                                | $\geq$ 1.5 local currency                   |
+| Trading history                   | $\geq$ 252 trading days                                | ---                                         |
+| IPO seasoning                     | $\geq$ 60 trading days since first price               | ---                                         |
+| Financial statements              | $\geq$ 3 annual or 8 quarterly reports                 | ---                                         |
 
 ![Fig. 1: Hysteresis Reduces Universe Turnover](../figures/ch00/fig_01_hysteresis_turnover.png)
-*Figure 1: Monthly universe turnover under three hysteresis regimes — symmetric thresholds (no gap), moderate gap (10–15%), and wide gap (25% default). Asymmetric entry/exit thresholds reduce turnover by roughly half.*
+_Figure 1: Monthly universe turnover under three hysteresis regimes — symmetric thresholds (no gap), moderate gap (10-15%), and wide gap (25% default). Asymmetric entry/exit thresholds reduce turnover by roughly half._
 
 ## Factor Taxonomy and Empirical Evidence
 
@@ -92,7 +92,7 @@ Net insider buying predicts excess returns of approximately 3 to 8 percent annua
 Understanding the pairwise correlation structure among factors is essential for composite construction. The most valuable combinations pair negatively correlated factors: value with profitability ($\rho \approx -0.3$ to $-0.5$) and value with momentum (low or mildly negative correlation). These pairings improve composite Sharpe ratios by capturing distinct sources of return while partially hedging each factor's drawdowns. Conversely, momentum, analyst revisions, and short-term trend factors share similar directional information, and low volatility, dividend yield, and quality overlap in their defensive profiles. Combining highly correlated factors within the same composite group and weighting groups rather than individual factors avoids double-counting.
 
 ![Fig. 2: Cross-Factor Correlation Structure](../figures/ch00/fig_02_cross_factor_correlation.png)
-*Figure 2: Spearman rank correlation matrix for all 17 individual factors, sorted by group membership. Factors within the same group (separated by black lines) exhibit positive correlation, while value–profitability and value–momentum pairs show the negative or near-zero correlations that make their combination attractive for composite construction.*
+_Figure 2: Spearman rank correlation matrix for all 17 individual factors, sorted by group membership. Factors within the same group (separated by black lines) exhibit positive correlation, while value-profitability and value-momentum pairs show the negative or near-zero correlations that make their combination attractive for composite construction._
 
 ## Factor Construction Methodology
 
@@ -109,7 +109,7 @@ $$
 Consider five stocks with raw book-to-price ratios drawn from a cross-section of 500 names. After winsorization at the 1st and 99th percentiles clips the extreme outlier, z-score standardization centres the distribution at zero with unit standard deviation:
 
 | Stock | Raw B/P | Winsorized | Z-Score |
-|-------|---------|------------|---------|
+| ----- | ------- | ---------- | ------- |
 | A     | 0.2100  | 0.2100     | −1.1889 |
 | B     | 0.5500  | 0.5500     | −0.5076 |
 | C     | 0.9200  | 0.9200     | 0.2338  |
@@ -127,7 +127,7 @@ $$
 This rank-normal transformation eliminates the influence of extreme outliers while preserving ordinal information, following the practice advocated by Asness and Frazzini for heavy-tailed factors. Prior to either transformation, winsorization at the 1st and 99th percentiles (or 2.5th and 97.5th for mildly skewed factors) caps the influence of extreme observations that may reflect data errors rather than genuine dispersion.
 
 ![Fig. 4: Rank-Normal Transformation Tames Heavy Tails](../figures/ch00/fig_04_rank_normal_histograms.png)
-*Figure 4: Distribution of book-to-price across three stages: raw values (left, heavy-tailed), z-score standardized (centre, centred but retaining skew), and rank-normal transformed (right, approximately Gaussian). The rank-normal transformation eliminates the influence of extreme outliers while preserving ordinal information.*
+_Figure 4: Distribution of book-to-price across three stages: raw values (left, heavy-tailed), z-score standardized (centre, centred but retaining skew), and rank-normal transformed (right, approximately Gaussian). The rank-normal transformation eliminates the influence of extreme outliers while preserving ordinal information._
 
 ### Sector and Country Neutralization
 
@@ -142,7 +142,7 @@ $$
 The residual $\varepsilon_i$ represents the stock-specific factor exposure after removing the component explained by sector and country membership. Optionally, the residuals are re-standardized to mean zero and unit standard deviation. An equivalent approach computes $z$-scores separately within each sector (or sector-country group) and stacks the results.
 
 ![Fig. 5: Sector Neutralization Removes Structural Biases](../figures/ch00/fig_05_sector_neutralization.png)
-*Figure 5: Book-to-price z-scores by sector before (left) and after (right) sector neutralization. Before neutralization, financials and utilities cluster high while technology clusters low; after neutralization, all sectors are centred at zero, isolating stock-specific value signals from sector membership.*
+_Figure 5: Book-to-price z-scores by sector before (left) and after (right) sector neutralization. Before neutralization, financials and utilities cluster high while technology clusters low; after neutralization, all sectors are centred at zero, isolating stock-specific value signals from sector membership._
 
 ### Missing Data Treatment
 
@@ -167,7 +167,7 @@ $$
 where $\overline{z}_{i,g}$ is the average standardized score of stock $i$ across factors in group $g$, and $w_g$ are the group weights.
 
 ![Fig. 6: Cross-Sectional Distribution of Composite Alpha Score](../figures/ch00/fig_06_alpha_score_distribution.png)
-*Figure 6: Histogram of the equal-weighted composite AlphaScore across all investable stocks. Top quintile (green) and bottom quintile (red) are highlighted. Vertical dashed lines mark the 20th and 80th percentile boundaries. The slight positive skew reflects the momentum component's contribution.*
+_Figure 6: Histogram of the equal-weighted composite AlphaScore across all investable stocks. Top quintile (green) and bottom quintile (red) are highlighted. Vertical dashed lines mark the 20th and 80th percentile boundaries. The slight positive skew reflects the momentum component's contribution._
 
 ### Information-Coefficient-Weighted Combinations
 
@@ -180,7 +180,7 @@ $$
 Setting factor weights proportional to $\max(\text{ICIR}_f, 0)$ and renormalizing overweights factors with historically stable predictive power and underweights noisy or unreliable signals. This approach tends to tilt toward momentum and profitability, which typically exhibit the highest IC ratios, at the expense of noisier sentiment and ownership signals.
 
 ![Fig. 7: Rolling Information Coefficients by Factor Group](../figures/ch00/fig_07_rolling_ic.png)
-*Figure 7: Rolling 12-month Spearman IC for price-based factors (momentum, volatility, short-term reversal). Shaded bands show ±1 standard deviation. Momentum exhibits the highest average IC but also the greatest volatility, consistent with its crash risk during regime transitions.*
+_Figure 7: Rolling 12-month Spearman IC for price-based factors (momentum, volatility, short-term reversal). Shaded bands show ±1 standard deviation. Momentum exhibits the highest average IC but also the greatest volatility, consistent with its crash risk during regime transitions._
 
 ### Factor Interaction and Multicollinearity Diagnostics
 
@@ -193,7 +193,7 @@ $$
 where $R_f^2$ is the coefficient of determination from regressing factor $f$ on all other factors, quantifies multicollinearity. Values exceeding 5 to 10 indicate that the factor is nearly a linear combination of others and should be merged into an existing group rather than included independently. Principal component analysis on standardized factor scores can further identify the effective dimensionality: retaining components explaining 70 to 80 percent of cross-sectional variance yields orthogonal factors suitable for regression-based expected return modeling.
 
 ![Fig. 8: Variance Inflation Factors Identify Redundant Factors](../figures/ch00/fig_08_vif_bar_chart.png)
-*Figure 8: Variance inflation factors for all 17 individual factors. Factors with VIF exceeding 5 (orange dashed) warrant scrutiny; those exceeding 10 (red dashed) are near-linear combinations of other factors and should be merged or dropped. Green bars indicate independent factors suitable for composite inclusion.*
+_Figure 8: Variance inflation factors for all 17 individual factors. Factors with VIF exceeding 5 (orange dashed) warrant scrutiny; those exceeding 10 (red dashed) are near-linear combinations of other factors and should be merged or dropped. Green bars indicate independent factors suitable for composite inclusion._
 
 Machine learning methods, including ridge regression and gradient boosting, can capture nonlinear factor interactions that linear composites miss. Gu, Kelly, and Xiu report that tree-based and neural-network models roughly double the Sharpe ratio of linear strategies on large US stock panels spanning several decades. However, for panels of 500 to 2000 stocks over 3 to 5 years, the gains are modest, on the order of 0.01 to 0.02 improvement in monthly rank IC, and the risk of overfitting is substantial. Shallow gradient-boosted trees with strong regularization represent the practical frontier; deeper architectures require more data than a typical institutional sample provides.
 
@@ -208,7 +208,7 @@ Two approaches convert composite scores into a selected universe. Fixed-count se
 Index providers use buffer bands around selection boundaries to reduce turnover. The same principle applies to factor-based selection. Under a fixed-count scheme, a stock currently in the selected set is retained if its new rank falls within $N + \text{buffer}$, where the buffer is typically 20 percent of the target count. New stocks enter in order of rank until the target count is met. Under quantile selection, a stock enters when its rank crosses into the top $Q_{\text{in}}$ percent (for example, 20 percent) and exits only when it falls below $Q_{\text{out}}$ percent (for example, 30 percent). This asymmetric boundary reduces one-way monthly turnover from the 25 to 35 percent range typical of unbuffered multi-factor selection to approximately 15 to 20 percent.
 
 ![Fig. 9: Buffer Zones Cut Selection Turnover by Half](../figures/ch00/fig_09_buffer_zone_turnover.png)
-*Figure 9: Average monthly one-way turnover under fixed-count selection with increasing buffer zones (0%, 5%, 10%, 15% of target count). Error bars show cross-period standard deviation.*
+_Figure 9: Average monthly one-way turnover under fixed-count selection with increasing buffer zones (0%, 5%, 10%, 15% of target count). Error bars show cross-period standard deviation._
 
 ### Transaction Cost and Turnover Analysis
 
@@ -223,7 +223,7 @@ $$
 where $c$ is the per-unit round-trip transaction cost. Novy-Marx and Velikov estimate that trading costs range from 5 to 20 basis points per unit of turnover for liquid developed-market equities, depending on capitalization and execution method. If gross alpha from selection is 3 percent annualized and annual one-way turnover is 240 percent (20 percent monthly), costs at 20 basis points per unit consume approximately 48 basis points, leaving roughly 2.5 percent net alpha before optimization decisions.
 
 ![Fig. 10: Net Alpha Sensitivity to Transaction Costs](../figures/ch00/fig_10_net_alpha_vs_cost.png)
-*Figure 10: Net alpha as a function of annual one-way turnover for 10, 25, and 50 bps round-trip transaction costs. Breakeven turnover levels are annotated where net alpha crosses zero.*
+_Figure 10: Net alpha as a function of annual one-way turnover for 10, 25, and 50 bps round-trip transaction costs. Breakeven turnover levels are annotated where net alpha crosses zero._
 
 ### Sector Balance Constraints
 
@@ -236,7 +236,7 @@ $$
 where $\delta$ is an absolute tolerance (for example, 5 percentage points). Implementation proceeds by computing target counts per sector proportional to parent weights, selecting the top-ranked stocks within each sector up to the target count, and adjusting to reach the overall target through marginal additions or removals in sectors with the largest score gaps.
 
 ![Fig. 11: Sector Balance Constraints Prevent Factor-Driven Concentration](../figures/ch00/fig_11_sector_balance.png)
-*Figure 11: Stock counts per GICS sector under unconstrained factor selection, sector-balanced selection (±5 pp tolerance), and market-cap-weighted top-100. Sector balancing prevents factor-driven overconcentration in financials, energy, and technology.*
+_Figure 11: Stock counts per GICS sector under unconstrained factor selection, sector-balanced selection (±5 pp tolerance), and market-cap-weighted top-100. Sector balancing prevents factor-driven overconcentration in financials, energy, and technology._
 
 ## Regime-Conditional Factor Tilts
 
@@ -266,10 +266,10 @@ $$
 where $m_g(R_t)$ is a regime-dependent multiplier for factor group $g$ given the current regime $R_t$. The tilted weights are renormalized to sum to unity. Representative multipliers increase value and size weights by 20 to 40 percent during expansions and recoveries while reducing them during recessions, and increase quality and low-volatility weights by 30 to 60 percent during slowdowns and recessions while reducing them during expansions.
 
 ![Fig. 12: Regime-Conditional Factor Weight Multipliers](../figures/ch00/fig_12_regime_tilt_heatmap.png)
-*Figure 12: Multiplicative tilt matrix for regime-conditional scoring. Green cells (multiplier > 1) indicate overweighting; red cells (< 1) indicate underweighting. Value and momentum are overweighted during expansions and recoveries, while profitability and low-risk are overweighted during slowdowns and recessions.*
+_Figure 12: Multiplicative tilt matrix for regime-conditional scoring. Green cells (multiplier > 1) indicate overweighting; red cells (< 1) indicate underweighting. Value and momentum are overweighted during expansions and recoveries, while profitability and low-risk are overweighted during slowdowns and recessions._
 
 ![Fig. 13: Time-Varying Factor Weights Under Regime-Conditional Tilting](../figures/ch00/fig_13_time_varying_weights.png)
-*Figure 13: Stacked area chart of normalized factor group weights over time, with background shading indicating the macro regime at each quarterly date. During recessions (red shading), defensive groups (profitability, low risk) expand while cyclical groups (value, momentum) contract; the pattern reverses during expansions and recoveries.*
+_Figure 13: Stacked area chart of normalized factor group weights over time, with background shading indicating the macro regime at each quarterly date. During recessions (red shading), defensive groups (profitability, low risk) expand while cyclical groups (value, momentum) contract; the pattern reverses during expansions and recoveries._
 
 ### Detection Lag and Out-of-Sample Efficacy
 
@@ -294,7 +294,7 @@ $$
 Annualized spreads are compared against literature benchmarks: approximately 3 to 5 percent for value, 6 percent for profitability, 8 to 12 percent for momentum, and 2 to 4 percent for illiquidity. Spreads substantially below these benchmarks may indicate implementation issues or sample-specific attenuation, while spreads substantially above suggest potential look-ahead bias or survivorship contamination.
 
 ![Fig. 14: Factor Quintile Spread Returns](../figures/ch00/fig_14_quintile_spreads.png)
-*Figure 14: Annualized quintile-spread returns (Q5 minus Q1) for each factor, with 95% bootstrapped confidence intervals and Newey-West significance stars. Green bars indicate positive long-short spreads; red bars indicate negative spreads.*
+_Figure 14: Annualized quintile-spread returns (Q5 minus Q1) for each factor, with 95% bootstrapped confidence intervals and Newey-West significance stars. Green bars indicate positive long-short spreads; red bars indicate negative spreads._
 
 ### Factor-Mimicking Portfolios
 
@@ -309,7 +309,7 @@ With ten or more factors and multiple construction variants, the risk of discove
 Given limited history of 3 to 5 years, time-series block cross-validation provides the most reliable out-of-sample assessment. Training on the first 36 months and validating on the subsequent 12 months, then rolling forward by 6 months and repeating, yields multiple non-overlapping test periods. For each factor and composite, out-of-sample IC and long-short spreads are computed per fold and aggregated across folds to assess stability. Combinatorial purged cross-validation offers a complementary approach that generates a larger number of test paths from the same data, at the cost of greater computational expense.
 
 ![Fig. 15: IS vs OOS IC Stability](../figures/ch00/fig_15_is_vs_oos_ic.png)
-*Figure 15: In-sample (blue) versus out-of-sample (orange) mean IC across rolling block cross-validation folds for the top five factors by absolute IC. The decay ratio (OOS/IS) in each panel title indicates predictive stability; ratios near 1.0 suggest robust out-of-sample performance.*
+_Figure 15: In-sample (blue) versus out-of-sample (orange) mean IC across rolling block cross-validation folds for the top five factors by absolute IC. The decay ratio (OOS/IS) in each panel title indicates predictive stability; ratios near 1.0 suggest robust out-of-sample performance._
 
 A meaningful stock-selection signal should outperform an equal-weighted benchmark of all investable names by at least 2 to 3 percent annualized gross, deliver a Sharpe improvement of at least 0.1 to 0.2, and exhibit statistically significant IC series with $t$-statistics above 2.5 to 3.0 across multiple out-of-sample folds.
 
@@ -334,7 +334,6 @@ $$
 $$
 
 where $\boldsymbol{\Omega}$ is the view uncertainty covariance matrix, typically set proportional to the view variance to reflect confidence in each factor view. This formulation tilts the equilibrium returns toward the factor views in proportion to view precision, producing well-diversified portfolios that incorporate factor information without the extreme weights that unconstrained mean-variance optimization generates from noisy expected return estimates.
-
 
 ### Factor Exposure Constraints
 

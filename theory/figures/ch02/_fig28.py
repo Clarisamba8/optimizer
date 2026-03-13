@@ -66,9 +66,7 @@ class Fig28SampleMeanInstability(FigureGenerator):
         tickers = asset_counts.index.tolist()
         returns_all = returns_all[tickers]
 
-        short_names = [
-            t.replace("_US_EQ", "").replace("_EQ", "") for t in tickers
-        ]
+        short_names = [t.replace("_US_EQ", "").replace("_EQ", "") for t in tickers]
 
         print(
             f"  Fig 28: {len(tickers)} assets — windows "
@@ -104,9 +102,7 @@ class Fig28SampleMeanInstability(FigureGenerator):
             ci_half = 1.96 * se_ann
 
             # Map available tickers back to full x_positions
-            x_idx = np.array(
-                [i for i, t in enumerate(tickers) if t in available]
-            )
+            x_idx = np.array([i for i, t in enumerate(tickers) if t in available])
             ax.bar(
                 x_idx + offset,
                 mu_ann,
@@ -135,7 +131,7 @@ class Fig28SampleMeanInstability(FigureGenerator):
         ax.legend(title="Window", fontsize=9)
         ax.set_title(
             "Sample Mean Instability: 95% Confidence Intervals Across Window Lengths\n"
-            f"({_N_ASSETS} assets (15–45% ann. vol filter), "
+            f"({_N_ASSETS} assets (15-45% ann. vol filter), "
             "error bars = +/-1.96 x SE, SE = sigma/sqrt(T) x 252)",
             fontsize=11,
         )

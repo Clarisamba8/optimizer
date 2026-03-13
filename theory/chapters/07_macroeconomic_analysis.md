@@ -84,7 +84,7 @@ Decision rules translate PMI readings into sector positioning:
 | PMI Range | Signal               | Sector Positioning                                        |
 | --------- | -------------------- | --------------------------------------------------------- |
 | $>$ 52    | Strong expansion     | Cyclical overweights (Industrials, Materials, Technology) |
-| 48–52     | Neutral / transition | Maintain neutral positioning                              |
+| 48-52     | Neutral / transition | Maintain neutral positioning                              |
 | $<$ 48    | Contraction          | Rotate to defensives (Staples, Healthcare, Utilities)     |
 | $<$ 45    | Deep contraction     | Maximum defensive positioning                             |
 
@@ -111,12 +111,12 @@ Credit spreads offer leading indicators of equity stress, with academic research
 
 **High-yield spreads** over Treasuries signal risk appetite across a spectrum of conditions. Note that the long-run average HY OAS since 1997 is approximately 540 bps, and the thresholds below are heuristic categories calibrated to institutional practice rather than formally standardized levels:
 
-| HY Spread   | Signal   | Positioning                                   |
-| ----------- | -------- | --------------------------------------------- |
-| $<$ 350 bps  | Risk-on  | Favors cyclicals; maintain equity overweight   |
-| 350–500 bps  | Neutral  | Balanced positioning                           |
-| 500–800 bps  | Risk-off | Defensive rotation; reduce equity beta         |
-| $>$ 800 bps  | Stressed | Maximum quality bias and defensive allocation  |
+| HY Spread    | Signal   | Positioning                                                          |
+| ------------ | -------- | -------------------------------------------------------------------- |
+| $<$ 350 bps  | Risk-on  | Favors cyclicals; maintain equity overweight                         |
+| 350-500 bps  | Neutral  | Balanced positioning                                                 |
+| 500-800 bps  | Risk-off | Defensive rotation; reduce equity beta                               |
+| $>$ 800 bps  | Stressed | Maximum quality bias and defensive allocation                        |
 | $>$ 1000 bps | Crisis   | Full defensive; historical crises (GFC: 2,182 bps; COVID: 1,087 bps) |
 
 **Investment-grade spreads** show similar patterns at tighter levels. Extremely tight IG spreads (below 80 bps, approaching historical minimums) can paradoxically signal late-cycle complacency, as tight spreads often precede widening episodes. This non-monotonic relationship requires monitoring both the level and the direction of spread changes.
