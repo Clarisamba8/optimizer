@@ -241,4 +241,84 @@ Real-time regime detection lags the true economic regime by one to three months 
 
 Asness and co-authors argue skeptically that much of the theoretical benefit of macro timing is eroded once detection lags and transaction costs are incorporated (Asness, Ilmanen, and Maloney, 2015; Asness, Chandra, Ilmanen, and Israel, 2017). The practical implication is that macro positioning should be implemented as moderate tilts around a diversified baseline rather than aggressive binary bets. The sector overweights and underweights in the cycle phase table above are constrained to institutional norms ($\pm$3 to 5 percentage points) precisely because detection uncertainty makes larger tilts unreliable. This is consistent with the treatment of regime-conditional factor tilts in the pre-selection chapter, where tilts are described as marginal adjustments on top of robust static factors.
 
+## News Sentiment as a Complementary Macro Signal
+
+The quantitative indicators described above — PMI, yield curve, credit spreads — are derived from structured economic data released on fixed schedules. News flow provides a complementary channel that captures shifts in growth expectations, policy uncertainty, and market risk appetite with near-zero publication lag. Country-level news sentiment does not replace hard data indicators but augments them by filling the gap between data releases, when qualitative information accumulates in financial media before it materialises in official statistics. The daily country-level news summary pipeline operationalises this channel by producing structured sentiment assessments from recent financial coverage.
+
+### Motivation and Theoretical Grounding
+
+Tetlock (2007) established the empirical foundation for text-based financial signals by demonstrating that media pessimism — measured by the fraction of negative words in Wall Street Journal columns — predicts near-term stock market declines and elevated trading volume. The effect is economically significant at daily and weekly horizons, though it partially reverses over longer periods, suggesting that sentiment captures temporary mispricing driven by investor attention rather than permanent changes in fundamentals.
+
+Loughran and McDonald (2011) refined word-list construction by showing that standard Harvard General Inquirer negative words are poor proxies for financial negativity. Terms like "liability", "tax", and "capital" register as negative in the Harvard list but carry neutral or positive connotation in financial contexts. Their domain-specific financial word list substantially improves classification accuracy for SEC filings and earnings releases, establishing that sentiment measurement requires lexicons calibrated to the target domain rather than general-purpose dictionaries.
+
+Baker, Bloom, and Davis (2016) extended the approach to macroeconomic uncertainty measurement through their **Economic Policy Uncertainty** (EPU) index, which combines newspaper coverage of economic and policy uncertainty with tax code expiration data and forecaster disagreement. High EPU correlates with reduced corporate investment, lower employment growth, and suppressed output, validating that aggregate news content carries macro-level information beyond individual asset returns. The EPU framework captures uncertainty rather than directional sentiment, making it complementary to the polarity-based approach described below.
+
+Collectively, these findings establish that country-level news flow contains time-varying signals about growth expectations, policy uncertainty, and risk appetite that complement the hard data captured by PMI and credit spreads — and that are available with lower publication lag than any of the three quantitative indicators in the existing framework.
+
+### The News Sentiment Score
+
+The **news sentiment score** $\psi_{c,t} \in [-1, 1]$ is a scalar produced for country $c$ on date $t$ that summarises the directional tone of recent financial coverage. Its conceptual foundation is the Loughran-McDonald polarity ratio for a single document $d$:
+
+$$
+\text{Pol}(d) = \frac{N_{\text{pos}}(d) - N_{\text{neg}}(d)}{N_{\text{pos}}(d) + N_{\text{neg}}(d) + 1}
+$$
+
+where $N_{\text{pos}}(d)$ and $N_{\text{neg}}(d)$ count positive and negative terms according to the financial-domain lexicon. The denominator includes a smoothing constant of 1 to handle documents with no sentiment-bearing terms. This formula contextualises what the LLM approximates when producing a continuous sentiment score from article text: the model implicitly performs polarity classification but with richer contextual understanding than a bag-of-words lexicon.
+
+The aggregate country score across $n$ articles available on day $t$ is:
+
+$$
+\psi_{c,t} = \frac{1}{n} \sum_{i=1}^{n} \omega_i \cdot \text{Pol}(d_i)
+$$
+
+where $\omega_i$ is a conceptual article-relevance weight discussed in the limitations section below. The score $\psi_{c,t}$ maps to the same $[-1, 1]$ interval as the `sentiment_score` field produced by the `SummarizeCountryNews` function in the news pipeline.
+
+To integrate sentiment into the macro decision framework, the composite score $S_t$ from the three-indicator system is extended with a fourth component:
+
+$$
+S_t^{\text{augmented}} = s_t^{\text{PMI}} + s_t^{\text{2s10s}} + s_t^{\text{HY}} + s_t^{\text{sent}}
+$$
+
+where the sentiment component maps the continuous score to a discrete signal:
+
+$$
+s_t^{\text{sent}} = \begin{cases} +1 & \text{if } \psi_{c,t} > 0.3 \\ 0 & \text{if } -0.3 \leq \psi_{c,t} \leq 0.3 \\ -1 & \text{if } \psi_{c,t} < -0.3 \end{cases}
+$$
+
+The $\pm 0.3$ thresholds match the calibration boundaries used in the `SummarizeCountryNews` prompt, which classifies sentiment as BULLISH when the score exceeds $+0.3$ and BEARISH when it falls below $-0.3$. This ensures that the discrete component score is consistent with the LLM's own classification. The wide neutral band ($[-0.3, +0.3]$) reflects the inherent noise in text-derived signals and prevents marginal sentiment readings from influencing the composite score.
+
+When incorporating the sentiment component, the regime thresholds should be re-calibrated to maintain equivalent sensitivity to the original three-indicator framework. With four components, $S_t^{\text{augmented}}$ ranges from $-4$ to $+4$ rather than $-3$ to $+3$. Appropriate thresholds are $S_t^{\text{augmented}} \geq 3$ for the expansionary regime and $S_t^{\text{augmented}} \leq -3$ for the contractionary regime, preserving the requirement that at least three of four indicators must be aligned before triggering aggressive positioning.
+
+### Implementation in the Country News Pipeline
+
+The daily country-level news summary pipeline operationalises the sentiment score through a structured LLM workflow. The pipeline fetches articles from the preceding 24 hours, maps them to countries via predefined ticker-to-country and query-to-country mappings, groups the articles by country, and requires a minimum of three articles before invoking the LLM to avoid producing sentiment estimates from insufficient coverage.
+
+The `SummarizeCountryNews` function produces a structured output containing three fields: a 3--5 sentence macro briefing (`summary`) that captures the key economic themes, a discrete sentiment label (`sentiment`) drawn from the set BULLISH, BEARISH, NEUTRAL, and MIXED, and a continuous sentiment score (`sentiment_score`) corresponding to $\psi_{c,t}$. The discrete label maps directly to the component score $s_t^{\text{sent}}$: BULLISH maps to $+1$, BEARISH to $-1$, and both NEUTRAL and MIXED to $0$.
+
+Output is persisted to the `macro_news_summaries` table with cache gating — a country is not re-summarised within the same calendar day unless a forced refresh is requested. This prevents redundant LLM invocations while ensuring that the sentiment signal updates at daily frequency. Countries currently covered by the mapping include the United States, the United Kingdom, Germany, and France. Articles with global or commodity focus that cannot be attributed to a specific country are excluded from country-level sentiment computation to avoid diluting geographic specificity.
+
+The continuous `sentiment_score` is the operationalisation of $\psi_{c,t}$; the discrete `sentiment` label provides a human-readable classification that maps to the $\{+1, 0, -1\}$ component score. Both fields are stored and available to downstream consumers, allowing the integration framework to use either the continuous score for granular blending or the discrete label for threshold-based regime classification.
+
+### Limitations and the Conceptual Status of Lambda
+
+**The article-relevance weight $\omega_i$ as conceptual framing.** The weighting term $\omega_i$ in the polarity formula represents article relevance — a central bank statement should carry more weight than a speculative opinion piece, and a headline from a major financial wire service should outweigh a regional newspaper column. In practice, the pipeline assigns equal weight to all articles ($\omega_i = 1$ for all $i$), with the LLM performing implicit relevance filtering through its prompt guidance to focus on macro-relevant content. The weight $\omega_i$ is therefore a conceptual parameter that identifies where relevance weighting would be inserted if the pipeline were extended to incorporate source quality, article prominence, or topic relevance scoring. It is not a tunable hyperparameter in the current implementation, and there is no calibration procedure for it. This distinction is important: the formula presents the general framework, but the implementation makes a specific simplifying choice that may be revisited as the pipeline matures.
+
+**Detection lag and signal noise.** News articles appear with near-zero publication lag relative to PMI (released monthly with a one-month delay) or GDP (released quarterly with multi-month delays and subsequent revisions). This timeliness advantage is partially offset by signal noise: any individual article may reflect editorial stance, political framing, or sensationalism rather than economic fundamentals, and the LLM summary condenses heterogeneous coverage into a single scalar. The sentiment score should be treated as carrying wide uncertainty — comparable to a mixed-signal macro environment — until corroborated by movements in the hard data indicators.
+
+**Coverage asymmetry.** The current implementation covers four countries (USA, UK, Germany, France), while the quantitative indicator framework covers only the United States by default in the calibration service. Cross-country consistency of sentiment scores is not guaranteed because the LLM prompt does not normalise for country-level differences in press freedom, media concentration, reporting conventions, or the relative volume of English-language coverage. Loughran and McDonald (2011) note that even lexicon-based approaches require domain-specific calibration; the LLM approach inherits a similar calibration dependency, amplified by the additional dimension of cross-country variation.
+
+**Mean reversion in sentiment-driven effects.** Tetlock (2007) documents partial reversal of sentiment-driven price effects over longer horizons: high media pessimism predicts returns over the following trading week but not over the following quarter. This mean-reversion pattern implies that sentiment signals should carry lower weight in the composite score when the investment horizon extends beyond a few weeks. The wide neutral band ($\pm 0.3$) in the discrete component score partially addresses this by classifying moderate sentiment readings as zero contribution, but users of the augmented composite score should be aware that the sentiment component is most informative at short horizons and least informative for strategic allocation decisions.
+
+**Relationship to EPU.** Baker, Bloom, and Davis (2016) construct the EPU index using newspaper search counts rather than polarity scoring, and it captures uncertainty rather than directional sentiment. The `sentiment_score` produced by the pipeline is closer in spirit to Tetlock (2007) and Loughran and McDonald (2011) — measuring directional polarity — than to the EPU framework. The two signals are complementary: a country with high EPU and positive directional sentiment presents a mixed picture — positive growth expectations alongside elevated policy uncertainty — which maps naturally to the MIXED classification label. A complete macro sentiment framework would ideally incorporate both directional polarity and uncertainty measurement, though the current pipeline focuses on the former.
+
+### Intraday Refresh and Retention
+
+The daily summarization described above captures the end-of-day snapshot of country-level sentiment. Between daily runs, news flow continues to arrive and may shift the sentiment picture — particularly around central bank announcements, employment reports, or geopolitical events that break during trading hours. A 30-minute incremental scheduler addresses this gap by re-processing only countries that have received new articles since the previous tick.
+
+On each tick the scheduler queries the `macro_news` table for articles with `publish_time` after the previous tick's timestamp. Articles are mapped to countries through the same ticker-to-country and query-to-country dictionaries used by the daily pipeline. Only countries with at least one new article are re-summarized with `force_refresh=True`, bypassing the cache gate and invoking the LLM. Countries with no new articles retain their existing summary without additional LLM cost. This incremental design keeps LLM invocations proportional to actual news activity rather than running a fixed number of calls per tick.
+
+The scheduler also enforces a 90-day retention policy on the `macro_news_summaries` table. On every tick, rows with `summary_date` older than 90 days are deleted. This prevents unbounded table growth while preserving sufficient history for trend analysis and backtesting of the sentiment signal's predictive value.
+
+Error isolation operates at two levels. Per-country errors within `generate_country_summaries` are caught and logged without blocking other countries. The scheduler's own tick function is wrapped in a top-level exception handler so that a failure in one tick — whether from a database timeout, LLM API error, or transient network issue — does not terminate the daemon thread. The scheduler simply logs the error and waits for the next interval.
+
 \newpage
