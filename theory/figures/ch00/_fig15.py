@@ -145,7 +145,7 @@ class Fig15ISvsOOSIC(FigureGenerator):
         returns_mi = returns_flat.to_frame("return")
 
         # Run OOS validation
-        oos_config = FactorOOSConfig(train_months=24, val_months=6, step_months=6)
+        oos_config = FactorOOSConfig(train_periods=24, val_periods=6, step_periods=6)
         try:
             oos_result = run_factor_oos_validation(
                 scores_mi, returns_mi, config=oos_config,
@@ -167,8 +167,8 @@ class Fig15ISvsOOSIC(FigureGenerator):
         folds_used = min(oos_result.n_folds, len(oos_result.per_fold_ic))
 
         for i in range(folds_used):
-            t_start = i * oos_config.step_months
-            t_end = t_start + oos_config.train_months
+            t_start = i * oos_config.step_periods
+            t_end = t_start + oos_config.train_periods
             if t_end > n_total:
                 break
             train_dates = all_dates[t_start:t_end]
